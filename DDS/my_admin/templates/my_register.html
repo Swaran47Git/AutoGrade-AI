@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoGrade AI | Create Account</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root {
+            --primary: #1a56db;
+            --primary-dark: #1e429f;
+            --secondary: #f59e0b;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --gray: #6b7280;
+            --danger: #dc2626;
+            --success: #10b981;
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .register-container {
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header i { font-size: 4rem; margin-bottom: 20px; }
+        .header h1 { font-size: 2rem; margin-bottom: 10px; }
+
+        .form-container { padding: 40px; }
+
+        .form-group { margin-bottom: 25px; position: relative; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark); font-size: 0.95rem; }
+        .form-group i { position: absolute; left: 15px; top: 42px; color: var(--gray); font-size: 1.1rem; z-index: 2; }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: var(--transition);
+            background-color: #f9fafb;
+            position: relative;
+        }
+
+        /* Validation Feedback */
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: white;
+            box-shadow: 0 0 0 4px rgba(26, 86, 219, 0.1);
+        }
+
+        /* Visual cue for invalid email while typing */
+        .form-group input:invalid:not(:placeholder-shown) {
+            border-color: var(--danger);
+            background-color: #fffafb;
+        }
+
+        .password-strength { margin-top: 8px; height: 4px; background-color: #e5e7eb; border-radius: 2px; overflow: hidden; }
+        .strength-bar { height: 100%; width: 0%; transition: var(--transition); }
+        .strength-text { font-size: 0.8rem; margin-top: 5px; color: var(--gray); }
+
+        .btn-register {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-register:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(26, 86, 219, 0.3); }
+
+        .login-link { text-align: center; margin-top: 25px; padding-top: 25px; border-top: 2px solid #e5e7eb; }
+        .login-link a { color: var(--primary); font-weight: 700; text-decoration: none; }
+
+        .error-message { background-color: #fee2e2; color: var(--danger); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95rem; display: flex; align-items: center; gap: 10px; border-left: 4px solid var(--danger); }
+        .success-message { background-color: #dcfce7; color: var(--success); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95rem; display: flex; align-items: center; gap: 10px; border-left: 4px solid var(--success); }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="header">
+            <i class="fas fa-car-crash"></i>
+            <h1>Create Account</h1>
+            <p>Join AutoGrade AI for AI Vehicle Analysis</p>
+        </div>
+
+        <div class="form-container">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="{% if message.tags == 'error' %}error-message{% else %}success-message{% endif %}">
+                        <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" action="{% url 'my_register' %}">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="fullname">Full Name</label>
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="fullname" name="first_name" placeholder="Enter your full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <i class="fas fa-at"></i>
+                    <input type="text" id="username" name="username" placeholder="Choose a username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <i class="fas fa-envelope"></i>
+                    <input type="email"
+                           id="email"
+                           name="email"
+                           placeholder="example@gmail.com"
+                           required
+                           pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                           title="Please enter a valid email address (e.g. name@domain.com)">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" name="password" placeholder="Create a password" required onkeyup="checkPasswordStrength()">
+                    <div class="password-strength">
+                        <div class="strength-bar" id="strengthBar"></div>
+                    </div>
+                    <div class="strength-text" id="strengthText">Weak</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_password">Confirm Password</label>
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password" required onkeyup="validatePasswordMatch()">
+                </div>
+
+                <button type="submit" class="btn-register">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+            </form>
+
+            <div class="login-link">
+                <p>Already have an account? <a href="{% url 'my_login' %}">Sign In</a></p>
+                <a href="/" style="display:inline-block; margin-top:15px; color:var(--gray); text-decoration:none; font-size: 0.9rem;">
+                    <i class="fas fa-arrow-left"></i> Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function checkPasswordStrength() {
+            const password = document.getElementById('password').value;
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthText = document.getElementById('strengthText');
+            let strength = 0;
+
+            if (password.length >= 8) strength += 25;
+            if (password.match(/[a-z]+/)) strength += 25;
+            if (password.match(/[A-Z]+/)) strength += 25;
+            if (password.match(/[0-9]+/)) strength += 25;
+
+            strengthBar.style.width = strength + '%';
+            if (strength <= 25) {
+                strengthBar.style.backgroundColor = '#dc2626';
+                strengthText.textContent = 'Weak';
+            } else if (strength <= 50) {
+                strengthBar.style.backgroundColor = '#f59e0b';
+                strengthText.textContent = 'Fair';
+            } else if (strength <= 75) {
+                strengthBar.style.backgroundColor = '#3b82f6';
+                strengthText.textContent = 'Good';
+            } else {
+                strengthBar.style.backgroundColor = '#10b981';
+                strengthText.textContent = 'Strong';
+            }
+        }
+
+        function validatePasswordMatch() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            const confirmInput = document.getElementById('confirm_password');
+            confirmInput.style.borderColor = (confirmPassword === password && confirmPassword !== "") ? '#10b981' : '#dc2626';
+        }
+    </script>
+</body>
+</html>

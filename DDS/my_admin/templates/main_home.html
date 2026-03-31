@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoGrade AI | Car Damage Analytics</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #1a56db;
+            --primary-dark: #1e429f;
+            --secondary: #f59e0b;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --gray: #6b7280;
+            --danger: #dc2626;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Header & Navigation */
+        header {
+            background-color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .logo i {
+            font-size: 1.8rem;
+        }
+
+        .logo span {
+            color: var(--secondary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 600;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .nav-links a:after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            left: 0;
+            bottom: -5px;
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover:after {
+            width: 100%;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-login {
+            background-color: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-login:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-register {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-register:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(26, 86, 219, 0.2);
+        }
+
+        .btn-about {
+            background-color: var(--secondary);
+            color: var(--dark);
+        }
+
+        .btn-about:hover {
+            background-color: #e59409;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(245, 158, 11, 0.2);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 80px 0;
+            background: linear-gradient(135deg, #f0f4ff 0%, #fef9f3 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 40px;
+        }
+
+        .hero-text {
+            flex: 1;
+        }
+
+        .hero-text h1 {
+            font-size: 3.2rem;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+
+        .hero-text h1 span {
+            color: var(--primary);
+        }
+
+        .hero-text p {
+            font-size: 1.1rem;
+            color: var(--gray);
+            margin-bottom: 30px;
+            max-width: 600px;
+        }
+
+        .hero-image {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+
+        .car-showcase {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .damage-marker {
+            position: absolute;
+            background: rgba(220, 38, 38, 0.9);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .marker-1 { top: 35%; right: 25%; }
+        .marker-2 { bottom: 30%; left: 30%; }
+
+        .severity-badge {
+            position: absolute;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            font-weight: 600;
+        }
+
+        .severity-1 { bottom: 20%; right: 10%; border-left: 4px solid var(--warning); }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn-learn {
+            background-color: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-learn:hover {
+            background-color: rgba(26, 86, 219, 0.1);
+        }
+
+        /* Features Section */
+        .section-title {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            color: var(--dark);
+            margin-bottom: 15px;
+        }
+
+        .section-title p {
+            color: var(--gray);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features { padding: 80px 0; }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+            text-align: center;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            width: 70px;
+            height: 70px;
+            background-color: rgba(26, 86, 219, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .feature-icon i {
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+
+        /* Car Gallery Section */
+        .car-gallery { padding: 80px 0; background-color: white; }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-top: 50px;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .gallery-item div.car-icon-container {
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            color: white;
+            padding: 20px;
+            transform: translateY(100%);
+            transition: var(--transition);
+        }
+
+        .gallery-item:hover .gallery-overlay { transform: translateY(0); }
+
+        .damage-tag {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--danger);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 2;
+        }
+
+        .severity-tag {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: var(--warning);
+            color: var(--dark);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 2;
+        }
+
+        /* Technology Stack Section */
+        .technology {
+            padding: 80px 0;
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            color: white;
+        }
+
+        .technology .section-title h2,
+        .technology .section-title p { color: white; }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .tech-card {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 30px;
+            transition: var(--transition);
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .tech-icon { font-size: 2.5rem; margin-bottom: 20px; color: var(--secondary); }
+
+        /* Footer */
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 60px 0 30px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-links { list-style: none; }
+        .footer-links li { margin-bottom: 12px; }
+        .footer-links a { color: #d1d5db; text-decoration: none; transition: var(--transition); }
+        .footer-links a:hover { color: white; padding-left: 5px; }
+
+        .copyright {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid #374151;
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background-color: white;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            animation: modalFade 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        @keyframes modalFade {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            background-color: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .modal-body { padding: 30px; }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: white;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .hero-content { flex-direction: column; text-align: center; }
+            .hero-text h1 { font-size: 2.5rem; }
+            .cta-buttons { justify-content: center; }
+            .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .gallery-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header with Navigation -->
+    <header>
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-car-crash"></i>AutoGrade<span>AI</span>
+            </div>
+
+                <nav class="nav-links">
+                    <a href="#home">Home</a>
+                    <a href="#features">Features</a>
+                    <a href="#gallery">Gallery</a>
+                    <a href="#technology">Technology</a>
+                </nav>
+
+                <div class="auth-buttons">
+                    <button class="btn btn-about" onclick="openAboutModal()">About Project</button>
+                    <a href="{% url 'my_login' %}" class="btn btn-login">Login</a>
+                    <a href="{% url 'my_register' %}" class="btn btn-register">Register</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1>AI-Powered <span>Car Damage</span> Detection</h1>
+                    <p>Revolutionizing car insurance assessment. Upload images of your damaged car and get instant claim estimates based on real-time market values and AI damage classification.</p>
+
+                    <div class="cta-buttons">
+                        <a href="{% url 'my_register' %}" class="btn btn-register">Get Started</a>
+                        <a href="#features" class="btn btn-learn">Learn More</a>
+                        <button class="btn btn-about" onclick="openAboutModal()">About Project</button>
+                    </div>
+                </div>
+
+                <div class="hero-image">
+                    <div class="car-showcase">
+                        <div style="background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); border-radius: 12px; padding: 20px;">
+                            <i class="fas fa-car-side" style="font-size: 15rem; color: #e53e3e; display: block; text-align: center;"></i>
+                        </div>
+
+                        <div class="damage-marker marker-1">
+                            <i class="fas fa-exclamation-triangle"></i> Front Bumper Damage
+                        </div>
+                        <div class="damage-marker marker-2" style="left: 10%; top: 60%;">
+                            <i class="fas fa-exclamation-triangle"></i> Scratch Detected
+                        </div>
+
+                        <div class="severity-badge severity-1">
+                            <i class="fas fa-chart-line" style="color: var(--warning);"></i> 0.4 Damage Coeff.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-title">
+                <h2>Powerful Car Analytics</h2>
+                <p>Specifically designed for the automobile sector to provide accurate financial estimates for damages.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <h3>Market Value Database</h3>
+                    <p>Integrated SQLite database with real-time market prices for brands like Tata, Toyota, Honda, and Hyundai.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <h3>Claim Logic Engine</h3>
+                    <p>Automatic claim estimation using damage coefficients (0.2 to 0.9) multiplied by the car's current market value.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <h3>Severity Classification</h3>
+                    <p>AI classifies damage into Minor, Moderate, or Severe categories to determine the appropriate insurance payout.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Car Gallery Section -->
+    <section class="car-gallery" id="gallery">
+        <div class="container">
+            <div class="section-title">
+                <h2>Car Damage Gallery</h2>
+                <p>See how our AI identifies specific car body damage across different models</p>
+            </div>
+
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <div class="car-icon-container" style="background: #e53e3e;">
+                        <i class="fas fa-car" style="font-size: 8rem; color: white;"></i>
+                    </div>
+                    <span class="damage-tag">Front Fender</span>
+                    <span class="severity-tag">Severe (0.9)</span>
+                    <div class="gallery-overlay">
+                        <h3>Tata Nexon Analysis</h3>
+                        <p>Confidence: 95% | Est. Claim: High</p>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="car-icon-container" style="background: #3182ce;">
+                        <i class="fas fa-car-side" style="font-size: 8rem; color: white;"></i>
+                    </div>
+                    <span class="damage-tag">Side Door</span>
+                    <span class="severity-tag">Moderate (0.4)</span>
+                    <div class="gallery-overlay">
+                        <h3>Honda City Analysis</h3>
+                        <p>Confidence: 88% | Est. Claim: Mid</p>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="car-icon-container" style="background: #38a169;">
+                        <i class="fas fa-shuttle-van" style="font-size: 8rem; color: white;"></i>
+                    </div>
+                    <span class="damage-tag">Rear Bumper</span>
+                    <span class="severity-tag">Minor (0.2)</span>
+                    <div class="gallery-overlay">
+                        <h3>Toyota Innova Analysis</h3>
+                        <p>Confidence: 92% | Est. Claim: Low</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technology Stack Section -->
+    <section class="technology" id="technology">
+        <div class="container">
+            <div class="section-title">
+                <h2>Our Technology Stack</h2>
+                <p>Built with robust frameworks for the modern car insurance industry</p>
+            </div>
+
+            <div class="tech-grid">
+                <div class="tech-card">
+                    <div class="tech-icon"><i class="fab fa-python"></i></div>
+                    <h3>Django & SQLite</h3>
+                    <p>Managing secure user data and car market value repositories.</p>
+                </div>
+
+                <div class="tech-card">
+                    <div class="tech-icon"><i class="fas fa-brain"></i></div>
+                    <h3>CNN & YOLO</h3>
+                    <p>Deep learning models for car damage localization and severity levels.</p>
+                </div>
+
+                <div class="tech-card">
+                    <div class="tech-icon"><i class="fas fa-laptop-code"></i></div>
+                    <h3>Responsive Dashboard</h3>
+                    <p>Clean UI for users to upload photos and view instant analysis results.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-col">
+                    <div class="logo" style="color: white; margin-bottom: 20px;">
+                        <i class="fas fa-car-crash"></i>
+                        AutoScan<span style="color: var(--secondary);">Pro</span>
+                    </div>
+                    <p>The specialized AI solution for car damage assessment and automated insurance claim estimation in India.</p>
+                </div>
+
+                <div class="footer-col">
+                    <h3>Quick Links</h3>
+                    <ul class="footer-links">
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#gallery">Gallery</a></li>
+                        <li><a href="#technology">Technology</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h3>Contact</h3>
+                    <ul class="footer-links">
+                        <li><i class="fas fa-envelope" style="margin-right: 10px;"></i> info@autoscanpro.com</li>
+                        <li><i class="fas fa-map-marker-alt" style="margin-right: 10px;"></i> Ernakulam, Kerala</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2026 AutoGrade AI - Final Year BCA Data Science Project. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- About Project Modal -->
+    <div class="modal" id="aboutModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Project Specification</h2>
+                <button class="close-modal" onclick="closeAboutModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3 style="color: var(--primary); margin-bottom: 10px;">Objective</h3>
+                <p style="margin-bottom: 20px;">Automating car damage assessment to provide instant financial estimates for insurance claims. By integrating AI detection with a SQLite database of car market values, the system eliminates manual bias.</p>
+
+                <h3 style="color: var(--primary); margin-bottom: 10px;">The Claim Logic</h3>
+                <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--secondary);">
+                    <p><strong>Formula:</strong> Estimated Claim = Market Value × Damage Coefficient</p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Minor Damage: 0.2</li>
+                        <li>Moderate Damage: 0.4</li>
+                        <li>Severe Damage: 0.9</li>
+                    </ul>
+                </div>
+
+                <h3 style="color: var(--primary); margin-bottom: 10px;">Features</h3>
+                <ul style="margin-left: 20px;">
+                    <li>Dynamic Car Selection (Tata, Toyota, Honda, Hyundai, VW)</li>
+                    <li>Image processing via CNN/YOLO models</li>
+                    <li>Secure Django User Authentication</li>
+                    <li>History tracking for previous car analyses</li>
+                </ul>
+            </div>
+            <div style="text-align: center; padding: 20px;">
+                <button class="btn btn-register" onclick="closeAboutModal()">Back to Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const aboutModal = document.getElementById('aboutModal');
+        function openAboutModal() { aboutModal.style.display = 'flex'; }
+        function closeAboutModal() { aboutModal.style.display = 'none'; }
+        window.onclick = (e) => { if(e.target === aboutModal) closeAboutModal(); }
+
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) window.scrollTo({ top: target.offsetTop - 80, behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>

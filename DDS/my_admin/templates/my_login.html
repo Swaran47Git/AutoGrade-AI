@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoGrade AI| Sign In</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Essential Styles Kept */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root { --primary: #1a56db; --primary-dark: #1e429f; --dark: #1f2937; --light: #f9fafb; --gray: #6b7280; --danger: #dc2626; --success: #10b981; --transition: all 0.3s ease; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-container { background-color: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); width: 100%; max-width: 450px; overflow: hidden; animation: slideUp 0.5s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; padding: 40px 30px; text-align: center; position: relative; overflow: hidden; }
+        .header i { font-size: 4rem; margin-bottom: 20px; position: relative; z-index: 1; }
+        .header h1 { font-size: 2rem; margin-bottom: 10px; position: relative; z-index: 1; }
+        .form-container { padding: 40px; }
+        .form-group { margin-bottom: 25px; position: relative; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark); font-size: 0.95rem; }
+        .form-group i { position: absolute; left: 15px; top: 42px; color: var(--gray); font-size: 1.1rem; }
+        .form-group input { width: 100%; padding: 15px 15px 15px 45px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 1rem; transition: var(--transition); background-color: #f9fafb; }
+        .form-group input:focus { outline: none; border-color: var(--primary); background-color: white; box-shadow: 0 0 0 4px rgba(26, 86, 219, 0.1); }
+        .btn-login { width: 100%; padding: 15px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: var(--transition); }
+        .register-link { text-align: center; margin-top: 25px; padding-top: 25px; border-top: 2px solid #e5e7eb; }
+        .register-link a { color: var(--primary); text-decoration: none; font-weight: 600; }
+        /* Django Message Classes */
+        .error-message { background-color: #fee2e2; color: var(--danger); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95rem; display: flex; align-items: center; gap: 10px; border-left: 4px solid var(--danger); }
+        .success-message { background-color: #dcfce7; color: var(--success); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95rem; display: flex; align-items: center; gap: 10px; border-left: 4px solid var(--success); }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="header">
+            <i class="fas fa-car-crash"></i>
+            <h1>Welcome Back</h1>
+            <p>Sign in to your AutoGrade AI account</p>
+        </div>
+
+        <div class="form-container">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="{% if message.tags == 'error' %}error-message{% else %}success-message{% endif %}">
+                        <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" action="{% url 'my_login' %}">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt" style="margin-right: 10px;"></i>
+                    Sign In
+                </button>
+            </form>
+
+            <div class="register-link">
+                <p>Don't have an account?</p>
+                <a href="{% url 'my_register' %}">Create Account</a>
+                <div style="margin-top: 15px;">
+                    <a href="/" style="color: var(--gray); text-decoration: none; font-size: 0.9rem;">
+                        <i class="fas fa-arrow-left"></i> Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
