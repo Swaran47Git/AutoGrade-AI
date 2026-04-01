@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from .models import VehicleValue  # Our Car Database
-import re
+import re, requests
 
 
 # 1. LANDING PAGE
@@ -114,4 +114,41 @@ def get_vehicle_details(request):
     return JsonResponse(list(car_data), safe=False)
 
 
+# 7. API Request for Yolo model
+def api_req(request):
+    if request.method == 'POST':
+        image = request.FILES.getlist('images')
+        print(image, "image? whare")
+        files_to_send = []
+        for img in image:
+            print(img.name)
+            # Most YOLO/Flask setups expect 'images' or 'file'
+            files_to_send.append(('image', (img.name, img.read(), img.content_type)))
 
+        #response = requests.post("http://192.168.1.15:5000/home", files=files_to_send)
+        # files_to_send = [('file', (img.name, img.read(), img.content_type)) for img in images]
+
+        try:
+            ai_url = "http://127.0.0.1:5000/home"
+            response = requests.post(ai_url, files=files_to_send, timeout=60)
+
+            # --- DEBUGGING LINES ---
+            print(f"AI Server Status Code: {response.status_code}")
+            print(f"AI Server Raw Response: {response.text}")
+            # -----------------------
+
+            # Check if the response is actually JSON before parsing
+            if response.status_code == 200:
+                try:
+                    ai_results = response.json()
+                    print(ai_results)
+                    return JsonResponse({'status': 'done', 'ai_data': ai_results})
+                except Exception:
+                    return JsonResponse({'status': 'error', 'message': 'AI server did not return JSON. Check AI terminal.'})
+            else:
+                return JsonResponse({'status': 'error', 'message': f'AI Server Error {response.status_code}'})
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid Request'}, status=400)

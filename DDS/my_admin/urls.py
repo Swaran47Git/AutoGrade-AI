@@ -7,6 +7,6 @@ urlpatterns = [
     path('my_register/', views.my_register, name="my_register"),
     path('admin_dashboard/', views.admin_dashboard, name="admin_dashboard"),
     path('logout/', views.my_logout, name='my_logout'),
-    # This path must exist to match the function in views.py
     path('get-vehicle-details/', views.get_vehicle_details, name='get_vehicle_details'),
+    path('api_req/', views.api_req, name='api_req'),
 ]

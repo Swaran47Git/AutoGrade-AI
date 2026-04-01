@@ -256,11 +256,17 @@
 
         // 4. Final Validation & Simulation
         function startCarAnalysis() {
+
+            // User selection data
             const isOther = document.getElementById('otherToggle').checked;
             const make = document.getElementById('vehicleMake').value;
             const model = document.getElementById('vehicleModel').value;
             const year = document.getElementById('vehicleYear').value;
             const manual = document.getElementById('manualDetails').value;
+
+            //data for AI Model
+            const ImagesFiles = document.getElementById('fileInput').files
+
 
             // Strict Validation
             if (!isOther) {
@@ -273,11 +279,44 @@
 
             // Run Animation
             document.getElementById('spinner').style.display = 'block';
-            setTimeout(() => {
+            const formData = new FormData();
+            for (let i = 0; i < ImagesFiles.length; i++) {
+               formData.append('images', ImagesFiles[i]);
+            }
+            //API Request for Yolo Model
+
+            //document.getElementById('spinner').style.display = 'none';
+            fetch('/api_req/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
                 document.getElementById('spinner').style.display = 'none';
+                alert("Success! Data saved to SQL and AI analysis complete.");
+                // No redirect happened. User is still on the same page!
+
                 alert('Analysis Successful!\n\nMarket Value and Damage Coefficients have been applied. Your estimated claim report is ready in the Reports section.');
-            }, 3000);
+            });
+
         }
+        function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
     </script>
 </body>
 </html>
