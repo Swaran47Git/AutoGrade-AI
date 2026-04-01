@@ -6,7 +6,7 @@ This is the Web interface of system using django
 
 ### Set project localy
 
-'''
+``` bash
 git clone https://github.com/Swaran47Git/AutoGrade-AI.git
 python -m venv .venv
-'''
+```
