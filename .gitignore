@@ -1,0 +1,25 @@
+# Environment
+.env
+venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+*.log
+build/
+dist/
+
+# Django
+db.sqlite3
+local_settings.py
+
+# IDE/OS
+.idea/
+.vscode/
+.DS_Store
+
+# Media and Static files
+media/
+staticfiles/
+
