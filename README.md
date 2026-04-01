@@ -8,5 +8,13 @@ This is the Web interface of system using django
 
 ``` bash
 git clone https://github.com/Swaran47Git/AutoGrade-AI.git
+cd AutoGrade-AI
 python -m venv .venv
+```
+
+### Set venv 
+
+```commandline
+DDS/.venv/Scripts/activate
+pip install -r requirements.txt
 ```
