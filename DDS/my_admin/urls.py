@@ -9,7 +9,6 @@ urlpatterns = [
     path('login/', views.my_login, name="my_login"),
     path('register/', views.my_register, name="my_register"),
     path('logout/', views.my_logout, name='my_logout'),
-<<<<<<< HEAD
 
     # --- 2. Standard User Workflow ---
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
@@ -35,13 +34,10 @@ urlpatterns = [
 
     # --- 5. Utilities & AJAX ---
     path('get-vehicle-details/', views.get_vehicle_details, name='get_vehicle_details'),
+    path('api_req/', views.api_req, name='api_req'),
 ]
 
 # --- 6. Media File Serving (Crucial for Car Images) ---
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-=======
-    path('get-vehicle-details/', views.get_vehicle_details, name='get_vehicle_details'),
-    path('api_req/', views.api_req, name='api_req'),
-]
->>>>>>> master
+

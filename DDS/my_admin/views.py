@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import re
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -8,7 +7,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
 from django.utils import timezone
 from .models import VehicleValue, DamageAnalysis, UserProfile, InsuranceCompany, UserComplaint
-=======
+
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.models import User
@@ -17,7 +16,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from .models import VehicleValue  # Our Car Database
 import re, requests
->>>>>>> master
+
 
 
 # --- HELPER: SECURITY CHECK ---
@@ -319,9 +318,10 @@ def grant_agent_status(request, user_id):
 def get_vehicle_details(request):
     make = request.GET.get('make')
     car_data = VehicleValue.objects.filter(make=make).values('model', 'year')
-<<<<<<< HEAD
+
     return JsonResponse(list(car_data), safe=False)
-=======
+
+
     return JsonResponse(list(car_data), safe=False)
 
 
@@ -363,4 +363,4 @@ def api_req(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
     return JsonResponse({'status': 'error', 'message': 'Invalid Request'}, status=400)
->>>>>>> master
+
