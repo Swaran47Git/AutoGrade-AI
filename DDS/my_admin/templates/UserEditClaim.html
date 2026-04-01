@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AutoGrade AI | Edit Claim</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #f3f4f6; display: flex; }
+        .main-content { flex: 1; padding: 40px; margin-left: 280px; }
+        .edit-card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 600px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 700; color: #374151; }
+        input { width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 1rem; }
+        .btn-save { background: #1a56db; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s; }
+        .btn-save:hover { background: #1e429f; }
+        .alert-info { background: #eff6ff; color: #1e40af; padding: 15px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #3b82f6; }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <div class="edit-card">
+            <h2>Review Your Submission</h2>
+            <p style="margin-bottom: 20px; color: #6b7280;">Claim ID: #{{ claim.id }}</p>
+
+            <div class="alert-info">
+                <i class="fas fa-info-circle"></i> You can edit these details until an insurance agent begins the formal valuation.
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Vehicle Information</label>
+                    <input type="text" name="car_details" value="{{ claim.car_details }}">
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn-save">Update Claim</button>
+                    <a href="{% url 'claim_history' %}" style="text-decoration:none; padding: 12px; color: #6b7280;">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

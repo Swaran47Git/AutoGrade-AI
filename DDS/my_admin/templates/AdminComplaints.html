@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AutoGrade AI | Admin Disputes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f3f4f6; display: flex; }
+        .main { flex: 1; padding: 40px; margin-left: 280px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        th { background: #1f2937; color: white; padding: 15px; text-align: left; }
+        td { padding: 15px; border-bottom: 1px solid #edf2f7; }
+        .priority-high { color: #dc2626; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <div class="main">
+        <h1>Escalated Claim Disputes</h1>
+        <p>Review final appeals from users who have exhausted their agent re-evaluations.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>User</th>
+                    <th>Claim ID</th>
+                    <th>Priority</th>
+                    <th>Reason for Escalation</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in complaints %}
+                <tr>
+                    <td>{{ c.created_at|date:"d M Y" }}</td>
+                    <td><strong>@{{ c.user.username }}</strong></td>
+                    <td>#{{ c.claim.id }}</td>
+                    <td class="priority-high">{{ c.priority }}</td>
+                    <td>{{ c.description|truncatewords:15 }}</td>
+                    <td><button style="padding: 5px 10px; cursor:pointer;">View Full Case</button></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center; padding: 50px;">No escalated disputes found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

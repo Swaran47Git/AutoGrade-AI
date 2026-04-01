@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoGrade AI | Claim Details</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root {
+            --primary: #1a56db;
+            --primary-dark: #1e429f;
+            --secondary: #f59e0b;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --gray: #6b7280;
+            --danger: #dc2626;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --transition: all 0.3s ease;
+        }
+
+        body { background-color: #f3f4f6; display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 280px; background: linear-gradient(135deg, var(--dark) 0%, #111827 100%); color: white; position: fixed; height: 100vh; padding: 30px 20px; z-index: 100; }
+        .sidebar-header .logo { display: flex; align-items: center; gap: 10px; font-size: 1.8rem; font-weight: 700; color: white; margin-bottom: 30px; }
+        .sidebar-header .logo i { color: var(--secondary); }
+        .sidebar-header .logo span span { color: var(--secondary); }
+        .nav-item { padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: rgba(255,255,255,0.7); text-decoration: none; transition: var(--transition); border-radius: 8px; margin-bottom: 5px; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); color: white; }
+
+        /* Main Content */
+        .main-content { flex: 1; margin-left: 280px; padding: 40px; }
+        .detail-card { background: white; border-radius: 15px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 900px; margin: 0 auto; }
+
+        /* Header Styling */
+        .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; }
+        .claim-id { color: var(--gray); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; }
+        .status-badge { padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; }
+        .status-approved { background: #dcfce7; color: #166534; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+
+        /* Info Grid */
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 40px; }
+        .info-item label { display: block; color: var(--gray); font-size: 0.85rem; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; }
+        .info-item p { font-size: 1.1rem; color: var(--dark); font-weight: 600; }
+        .payout-value { font-size: 1.8rem !important; color: var(--primary) !important; }
+
+        /* Comment Boxes */
+        .comment-box { padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid; }
+        .agent-note { background: #f0f9ff; border-left-color: var(--primary); }
+        .appeal-note { background: #fff7ed; border-left-color: var(--warning); }
+
+        /* Appeal Form */
+        .appeal-section { margin-top: 40px; padding: 30px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; }
+        .appeal-section h3 { margin-bottom: 20px; color: var(--dark); display: flex; align-items: center; gap: 10px; }
+        textarea { width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 1rem; margin-bottom: 20px; resize: none; transition: var(--transition); background: white; }
+        textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(26, 86, 219, 0.1); }
+
+        .btn { padding: 14px 28px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; transition: var(--transition); width: 100%; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #b91c1c; transform: translateY(-2px); }
+
+        .limit-notice { background: #fee2e2; color: #991b1b; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px solid #fecaca; }
+
+        /* New Warning Note */
+        .final-warning { color: #991b1b; background: #fee2e2; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fecaca; font-size: 0.9rem; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo"><i class="fas fa-car-crash"></i><span>AutoGrade<span>AI</span></span></div>
+        </div>
+        <div class="nav-menu">
+            <a href="{% url 'admin_dashboard' %}" class="nav-item">
+                <i class="fas fa-arrow-left"></i><span>Back to Dashboard</span>
+            </a>
+            <a href="{% url 'claim_history' %}" class="nav-item">
+                <i class="fas fa-history"></i><span>Claim History</span>
+            </a>
+            <a href="{% url 'my_logout' %}" class="nav-item" style="color: var(--danger); margin-top: 20px;">
+                <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="detail-card">
+
+            <div class="header-row">
+                <div>
+                    <span class="claim-id">Claim Reference #{{ claim.id }}</span>
+                    <h2 style="margin-top: 5px;">{{ claim.car_details }}</h2>
+                </div>
+                <div class="status-badge {% if claim.status == 'Approved' %}status-approved{% else %}status-pending{% endif %}">
+                    <i class="fas {% if claim.status == 'Approved' %}fa-check-circle{% else %}fa-clock{% endif %}"></i>
+                    {{ claim.status }}
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Submission Date</label>
+                    <p>{{ claim.date_analyzed|date:"d F Y" }}</p>
+                </div>
+                <div class="info-item">
+                    <label>AI Damage Severity</label>
+                    <p style="color: var(--primary);">{{ claim.damage_level|upper }}</p>
+                </div>
+                <div class="info-item">
+                    <label>Assigned Agent</label>
+                    <p>{{ claim.agent.first_name|default:"Awaiting Assignment" }}</p>
+                </div>
+                <div class="info-item">
+                    <label>Estimated Payout</label>
+                    <p class="payout-value">₹{{ claim.estimated_claim|default:"0.00" }}</p>
+                </div>
+            </div>
+
+            <div class="comment-box agent-note">
+                <label style="font-weight: 800; font-size: 0.75rem; color: var(--primary-dark); text-transform: uppercase;">Agent's Remarks</label>
+                <p style="margin-top: 10px; line-height: 1.6; color: #1e3a8a;">
+                    {{ claim.agent_comment|default:"The insurance agent has not left a comment for this valuation yet." }}
+                </p>
+            </div>
+
+            <div class="appeal-section">
+                {% if claim.status != 'Pending' %}
+
+                    {% if claim.appeal_count < 2 %}
+                        <h3><i class="fas fa-sync-alt"></i> Request Re-evaluation</h3>
+                        <p style="color: var(--gray); margin-bottom: 20px; font-size: 0.9rem;">
+                            If you disagree with this valuation, you can appeal.
+                            <strong>Current Appeal: {{ claim.appeal_count|add:1 }} of 2</strong>
+                        </p>
+
+                        {% if claim.appeal_count == 1 %}
+                            <div class="final-warning">
+                                <i class="fas fa-exclamation-triangle"></i> <strong>Final Appeal:</strong> This is your last chance to request a re-evaluation from the Insurance Agent. If you are still unsatisfied after this, the case will be escalated to the System Administrator.
+                            </div>
+                        {% endif %}
+
+                        <form method="POST" action="{% url 'submit_appeal' claim.id %}">
+                            {% csrf_token %}
+                            <textarea name="appeal_reason" placeholder="Please describe why you believe the damage assessment or valuation is incorrect..." required rows="4"></textarea>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Send Appeal to Agent
+                            </button>
+                        </form>
+
+                    {% else %}
+                        <div class="limit-notice">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 1.5rem; margin-bottom: 10px; display: block;"></i>
+                            <p><strong>Maximum re-evaluations reached for this claim.</strong></p>
+                        </div>
+
+                        <h3><i class="fas fa-user-shield"></i> Final Admin Escalation</h3>
+                        <p style="color: var(--gray); margin-bottom: 20px; font-size: 0.9rem;">
+                            Your case will be reviewed directly by the System Administrator for a final decision.
+                        </p>
+
+                        <form method="POST" action="{% url 'admin_complaint' claim.id %}">
+                            {% csrf_token %}
+                            <textarea name="description" placeholder="Provide a final statement for the Administrator's review..." required rows="4"></textarea>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-gavel"></i> Escalate to Admin Dashboard
+                            </button>
+                        </form>
+                    {% endif %}
+
+                {% else %}
+                    <div style="text-align: center; padding: 20px; background: white; border-radius: 10px; color: var(--gray); border: 2px dashed #e2e8f0;">
+                        <i class="fas fa-hourglass-half" style="font-size: 2rem; margin-bottom: 15px; display: block; color: var(--secondary);"></i>
+                        <p>This claim is currently under review by an Agent. You can request a re-evaluation once the valuation is finalized.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>

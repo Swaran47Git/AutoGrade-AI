@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoGrade AI | {{ profile.user.username }} Details</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root {
+            --primary: #1a56db;
+            --primary-dark: #1e429f;
+            --secondary: #f59e0b;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --gray: #6b7280;
+            --danger: #dc2626;
+            --success: #10b981;
+            --transition: all 0.3s ease;
+        }
+
+        body { background-color: #f3f4f6; display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 280px; background: linear-gradient(135deg, var(--dark) 0%, #111827 100%); color: white; position: fixed; height: 100vh; overflow-y: auto; transition: var(--transition); z-index: 100; }
+        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-header .logo { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.8rem; font-weight: 700; color: white; }
+        .sidebar-header .logo i { color: var(--secondary); }
+
+        .nav-menu { padding: 20px 0; }
+        .nav-item { padding: 12px 25px; display: flex; align-items: center; gap: 15px; color: rgba(255,255,255,0.7); text-decoration: none; transition: var(--transition); border-left: 4px solid transparent; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; border-left-color: var(--secondary); }
+
+        /* Main Content */
+        .main-content { flex: 1; margin-left: 280px; padding: 30px; }
+        .top-bar { background: white; border-radius: 12px; padding: 20px 30px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+
+        .back-link { text-decoration: none; color: var(--gray); font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: var(--transition); }
+        .back-link:hover { color: var(--primary); }
+
+        /* Grid Layout */
+        .detail-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; }
+
+        /* Card Panels */
+        .profile-card, .history-card { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+
+        .user-avatar { width: 80px; height: 80px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; color: white; margin: 0 auto 20px; }
+
+        .info-group { margin-bottom: 15px; }
+        .info-label { display: block; font-size: 0.8rem; color: var(--gray); text-transform: uppercase; font-weight: 700; margin-bottom: 3px; }
+        .info-value { font-size: 1rem; color: var(--dark); font-weight: 600; }
+
+        /* Table Styling */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; padding: 12px; background: #f8fafc; color: var(--gray); font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid #edf2f7; }
+        td { padding: 15px 12px; border-bottom: 1px solid #edf2f7; font-size: 0.95rem; }
+
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-approved { background: #dcfce7; color: #166534; }
+
+        @media (max-width: 992px) {
+            .detail-grid { grid-template-columns: 1fr; }
+            .sidebar { width: 80px; } .sidebar span { display: none; }
+            .main-content { margin-left: 80px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo"><i class="fas fa-car-crash"></i><span>AutoGrade<span>AI</span></span></div>
+        </div>
+        <div class="nav-menu">
+            <a href="{% url 'admin_panel' %}" class="nav-item active"><i class="fas fa-users"></i><span>User Directory</span></a>
+            <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <a href="{% url 'admin_panel' %}" class="back-link">
+                <i class="fas fa-arrow-left"></i> Back to User Directory
+            </a>
+            <h1 style="margin-top: 15px; color: var(--dark);">User Profile: {{ profile.user.username }}</h1>
+        </div>
+
+        <div class="detail-grid">
+            <div class="profile-card">
+                <div class="user-avatar">
+                    {{ profile.user.first_name|slice:":1" }}
+                </div>
+                <h2 style="text-align: center; margin-bottom: 5px;">{{ profile.user.get_full_name }}</h2>
+                <p style="text-align: center; color: var(--primary); font-weight: 700; letter-spacing: 1px;">
+                    <i class="fas fa-id-badge"></i> {{ profile.role|upper }}
+                </p>
+
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0;">
+
+                <div class="info-group">
+                    <span class="info-label">Email Address</span>
+                    <span class="info-value">{{ profile.user.email }}</span>
+                </div>
+
+                <div class="info-group">
+                    <span class="info-label">Account Created</span>
+                    <span class="info-value">{{ profile.user.date_joined|date:"d F Y" }}</span>
+                </div>
+
+                <div class="info-group">
+                    <span class="info-label">Last Login</span>
+                    <span class="info-value">{{ profile.user.last_login|date:"d M Y, H:i"|default:"Never" }}</span>
+                </div>
+
+                {% if profile.role == 'User' %}
+                <div style="margin-top: 30px;">
+                    <a href="{% url 'grant_agent_status' profile.id %}" class="back-link" style="color: var(--primary); font-size: 0.9rem;">
+                        <i class="fas fa-user-shield"></i> Upgrade to Insurance Agent
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="history-card">
+                <h3 style="color: var(--dark); display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-history" style="color: var(--primary);"></i>
+                    {% if profile.role == 'Agent' %}Review Audit Log{% else %}Claim Request History{% endif %}
+                </h3>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Vehicle Details</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in history %}
+                        <tr>
+                            <td style="color: var(--gray); font-weight: 600;">{{ item.date_analyzed|date:"d/m/Y" }}</td>
+                            <td style="font-weight: 600; color: var(--dark);">{{ item.car_details }}</td>
+                            <td>
+                                <span class="badge {% if item.status == 'Pending' %}status-pending{% else %}status-approved{% endif %}">
+                                    {{ item.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; padding: 40px; color: var(--gray);">
+                                <i class="fas fa-inbox" style="font-size: 2.5rem; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
+                                No activity records found for this account.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

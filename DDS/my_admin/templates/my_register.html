@@ -71,7 +71,6 @@
             position: relative;
         }
 
-        /* Validation Feedback */
         .form-group input:focus {
             outline: none;
             border-color: var(--primary);
@@ -79,7 +78,6 @@
             box-shadow: 0 0 0 4px rgba(26, 86, 219, 0.1);
         }
 
-        /* Visual cue for invalid email while typing */
         .form-group input:invalid:not(:placeholder-shown) {
             border-color: var(--danger);
             background-color: #fffafb;
@@ -110,9 +108,6 @@
 
         .login-link { text-align: center; margin-top: 25px; padding-top: 25px; border-top: 2px solid #e5e7eb; }
         .login-link a { color: var(--primary); font-weight: 700; text-decoration: none; }
-
-        .error-message { background-color: #fee2e2; color: var(--danger); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95rem; display: flex; align-items: center; gap: 10px; border-left: 4px solid var(--danger); }
-        .success-message { background-color: #dcfce7; color: var(--success); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95rem; display: flex; align-items: center; gap: 10px; border-left: 4px solid var(--success); }
     </style>
 </head>
 <body>
@@ -124,15 +119,6 @@
         </div>
 
         <div class="form-container">
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="{% if message.tags == 'error' %}error-message{% else %}success-message{% endif %}">
-                        <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
-                        <span>{{ message }}</span>
-                    </div>
-                {% endfor %}
-            {% endif %}
-
             <form method="POST" action="{% url 'my_register' %}">
                 {% csrf_token %}
 
@@ -157,7 +143,7 @@
                            placeholder="example@gmail.com"
                            required
                            pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-                           title="Please enter a valid email address (e.g. name@domain.com)">
+                           title="Please enter a valid email address">
                 </div>
 
                 <div class="form-group">
@@ -227,3 +213,4 @@
     </script>
 </body>
 </html>
+
