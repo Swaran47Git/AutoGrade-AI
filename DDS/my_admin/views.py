@@ -10,15 +10,12 @@ from django.utils import timezone
 from .models import VehicleValue, DamageAnalysis, UserProfile, InsuranceCompany, UserComplaint
 
 
-# --- HELPER: SECURITY CHECK ---
 def is_agent(user):
     try:
         return user.userprofile.role == 'Agent' or user.is_superuser
     except UserProfile.DoesNotExist:
         return False
 
-
-# --- 1. LANDING & AUTHENTICATION ---
 
 def main_home(request):
     return render(request, 'main_home.html')
@@ -31,24 +28,18 @@ def my_register(request):
         email = request.POST.get("email", "").strip()
         password = request.POST.get("password", "")
         confirm_password = request.POST.get("confirm_password", "")
-
         email_pattern = r'^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$'
         if not re.match(email_pattern, email.lower()):
             messages.error(request, "Invalid email format!")
             return render(request, "my_register.html")
-
         if password != confirm_password:
             messages.error(request, "Passwords do not match!")
             return render(request, "my_register.html")
-
         if User.objects.filter(username=username).exists():
             messages.error(request, "Username is already taken!")
             return render(request, "my_register.html")
-
         user = User.objects.create_user(username=username, email=email, password=password, first_name=first_name)
-        user.save()
         UserProfile.objects.create(user=user, role='User')
-
         messages.success(request, "Account created!")
         return redirect("my_login")
     return render(request, 'my_register.html')
@@ -59,7 +50,6 @@ def my_login(request):
         u_name = request.POST.get("username", "").strip()
         p_word = request.POST.get("password", "")
         user = authenticate(request, username=u_name, password=p_word)
-
         if user is not None:
             login(request, user)
             profile, created = UserProfile.objects.get_or_create(
@@ -82,12 +72,9 @@ def my_logout(request):
     return redirect('main_home')
 
 
-# --- 2. STANDARD USER WORKFLOW ---
-
 @login_required
 def admin_dashboard(request):
-    if request.user.userprofile.role == 'Agent':
-        return redirect('agent_dashboard')
+    if request.user.userprofile.role == 'Agent': return redirect('agent_dashboard')
     makes = VehicleValue.objects.values_list('make', flat=True).distinct()
     return render(request, "Dashboard.html", {'makes': makes})
 
@@ -101,14 +88,14 @@ def upload_images(request):
         manual = request.POST.get('manual_details')
         vehicle_desc = manual if manual else f"{year} {make} {model}"
 
-        new_claim = DamageAnalysis.objects.create(
+        # NOTE: When the model is active, you might call api_req here
+        DamageAnalysis.objects.create(
             user=request.user,
             car_details=vehicle_desc,
             status='Pending',
             damage_level='TBD',
             estimated_claim=0
         )
-        new_claim.save()
         messages.success(request, "Claim Submitted Successfully!")
         return redirect('claim_history')
     return redirect('admin_dashboard')
@@ -167,8 +154,6 @@ def user_edit_claim(request, claim_id):
     return render(request, "UserEditClaim.html", {'claim': claim})
 
 
-# --- 3. AGENT WORKFLOW ---
-
 @login_required
 @user_passes_test(is_agent, login_url='admin_dashboard')
 def agent_dashboard(request):
@@ -178,17 +163,13 @@ def agent_dashboard(request):
 
 @login_required
 def review_claim(request, claim_id):
-    if not is_agent(request.user):
-        return redirect('admin_dashboard')
-
+    if not is_agent(request.user): return redirect('admin_dashboard')
     claim = get_object_or_404(DamageAnalysis, id=claim_id)
-
     default_market_value = 0
     try:
         model_name = claim.car_details.split()[-1]
         vehicle = VehicleValue.objects.filter(model__icontains=model_name).first()
-        if vehicle:
-            default_market_value = vehicle.price
+        if vehicle: default_market_value = vehicle.price
     except:
         pass
 
@@ -197,19 +178,30 @@ def review_claim(request, claim_id):
         mi_c = request.POST.get('minor_coeff') or 0.025
         mo_c = request.POST.get('moderate_coeff') or 0.05
         ma_c = request.POST.get('major_coeff') or 0.1
-
         claim.market_value = m_val
         claim.minor_coeff = mi_c
         claim.moderate_coeff = mo_c
         claim.major_coeff = ma_c
         claim.agent_comment = request.POST.get('agent_comment')
 
-        # --- HARDCODED AI SIMULATION LOGIC ---
         if "run_model" in request.POST:
+            # --- START HARDCODED SIMULATION BLOCK ---
+            # To use the real model later, comment these 4 lines and uncomment the API section below
             claim.damage_level = "Moderate"
             claim.detected_parts = "Front Bumper (0.05), Left Headlight (0.02), Hood Dent (0.03)"
             claim.total_damage_factor = 0.10
-            claim.yolo_output_image = "yolo_results/sample_yolo.jpg" # Ensure file exists in media
+            claim.yolo_output_image = "yolo_results/sample_yolo.jpg"
+            # --- END HARDCODED SIMULATION BLOCK ---
+
+            """
+            # --- REAL MODEL INTEGRATION (UNCOMMENT LATER) ---
+            # ai_response = api_req(request)
+            # if ai_response.status == 'done':
+            #     claim.damage_level = ai_response.ai_data['severity']
+            #     claim.detected_parts = ai_response.ai_data['parts']
+            #     claim.yolo_output_image = ai_response.ai_data['image_path']
+            """
+
             claim.estimated_claim = float(m_val) * claim.total_damage_factor
             claim.save()
             messages.success(request, f"AI Simulation Complete: ₹{claim.estimated_claim:,.2f}")
@@ -233,20 +225,15 @@ def review_claim(request, claim_id):
     return render(request, "ReviewClaim.html", context)
 
 
-# FIXED: Added the missing function that caused the AttributeError
 @login_required
 @user_passes_test(is_agent, login_url='admin_dashboard')
 def manage_part_weights(request):
-    """Allows agents to adjust the system-wide importance of car parts."""
     return render(request, "ManageWeights.html")
 
 
-# --- 4. ADMIN WORKFLOW ---
-
 @login_required
 def admin_panel(request):
-    if request.user.userprofile.role != 'Admin':
-        return redirect('admin_dashboard')
+    if request.user.userprofile.role != 'Admin': return redirect('admin_dashboard')
     search_query = request.GET.get('search', '').strip()
     profiles = UserProfile.objects.all()
     if search_query:
@@ -257,16 +244,14 @@ def admin_panel(request):
 
 @login_required
 def admin_complaints_view(request):
-    if request.user.userprofile.role != 'Admin':
-        return redirect('admin_dashboard')
+    if request.user.userprofile.role != 'Admin': return redirect('admin_dashboard')
     complaints = UserComplaint.objects.all().order_by('-created_at')
     return render(request, "AdminComplaints.html", {'complaints': complaints})
 
 
 @login_required
 def user_detail_view(request, profile_id):
-    if request.user.userprofile.role != 'Admin':
-        return redirect('admin_dashboard')
+    if request.user.userprofile.role != 'Admin': return redirect('admin_dashboard')
     profile = get_object_or_404(UserProfile, id=profile_id)
     history = DamageAnalysis.objects.filter(
         agent=profile.user) if profile.role == 'Agent' else DamageAnalysis.objects.filter(user=profile.user)
@@ -275,16 +260,13 @@ def user_detail_view(request, profile_id):
 
 @login_required
 def grant_agent_status(request, user_id):
-    if request.user.userprofile.role != 'Admin':
-        return redirect('admin_dashboard')
+    if request.user.userprofile.role != 'Admin': return redirect('admin_dashboard')
     profile = get_object_or_404(UserProfile, id=user_id)
     profile.role = 'Agent'
     profile.save()
     messages.success(request, f"{profile.user.username} is now an Insurance Agent.")
     return redirect('admin_panel')
 
-
-# --- 5. AJAX & API UTILS ---
 
 def get_vehicle_details(request):
     make = request.GET.get('make')
@@ -293,7 +275,7 @@ def get_vehicle_details(request):
 
 
 def api_req(request):
-    """API gateway for YOLO model requests."""
+    """External YOLO Gateway (Keep for later use)"""
     if request.method == 'POST':
         images = request.FILES.getlist('images')
         files_to_send = [('image', (img.name, img.read(), img.content_type)) for img in images]
@@ -302,7 +284,6 @@ def api_req(request):
             response = requests.post(ai_url, files=files_to_send, timeout=60)
             if response.status_code == 200:
                 return JsonResponse({'status': 'done', 'ai_data': response.json()})
-            return JsonResponse({'status': 'error', 'message': f'AI Error {response.status_code}'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid Request'}, status=400)
