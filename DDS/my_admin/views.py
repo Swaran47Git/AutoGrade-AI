@@ -88,7 +88,6 @@ def my_logout(request):
 def admin_dashboard(request):
     if request.user.userprofile.role == 'Agent':
         return redirect('agent_dashboard')
-
     makes = VehicleValue.objects.values_list('make', flat=True).distinct()
     return render(request, "Dashboard.html", {'makes': makes})
 
@@ -207,25 +206,16 @@ def review_claim(request, claim_id):
 
         # --- HARDCODED AI SIMULATION LOGIC ---
         if "run_model" in request.POST:
-            # 1. Technical Data
             claim.damage_level = "Moderate"
             claim.detected_parts = "Front Bumper (0.05), Left Headlight (0.02), Hood Dent (0.03)"
-
-            # 2. Summing Coefficients
-            claim.total_damage_factor = 0.10  # Hardcoded sum for demo
-
-            # 3. Simulated YOLO image path (Ensure this file exists in your media folder)
-            claim.yolo_output_image = "yolo_results/sample_yolo.jpg"
-
-            # 4. Final Calculation: Payout = Market Value * Sum(Coeffs)
+            claim.total_damage_factor = 0.10
+            claim.yolo_output_image = "yolo_results/sample_yolo.jpg" # Ensure file exists in media
             claim.estimated_claim = float(m_val) * claim.total_damage_factor
-
             claim.save()
             messages.success(request, f"AI Simulation Complete: ₹{claim.estimated_claim:,.2f}")
             return redirect('review_claim', claim_id=claim.id)
 
         if "finalize_valuation" in request.POST:
-            # Finalize and move to user view
             claim.status = 'Approved'
             claim.save()
             messages.success(request, "Valuation finalized and sent to user.")
@@ -241,6 +231,14 @@ def review_claim(request, claim_id):
         'def_minor': 0.025, 'def_moderate': 0.05, 'def_major': 0.1
     }
     return render(request, "ReviewClaim.html", context)
+
+
+# FIXED: Added the missing function that caused the AttributeError
+@login_required
+@user_passes_test(is_agent, login_url='admin_dashboard')
+def manage_part_weights(request):
+    """Allows agents to adjust the system-wide importance of car parts."""
+    return render(request, "ManageWeights.html")
 
 
 # --- 4. ADMIN WORKFLOW ---
@@ -295,27 +293,16 @@ def get_vehicle_details(request):
 
 
 def api_req(request):
-    """API gateway to the external YOLO AI server."""
+    """API gateway for YOLO model requests."""
     if request.method == 'POST':
         images = request.FILES.getlist('images')
-        files_to_send = []
-        for img in images:
-            files_to_send.append(('image', (img.name, img.read(), img.content_type)))
-
+        files_to_send = [('image', (img.name, img.read(), img.content_type)) for img in images]
         try:
-            ai_url = "http://192.168.29.58:5000/home"  # Ensure this matches your AI server IP
+            ai_url = "http://192.168.29.58:5000/home"
             response = requests.post(ai_url, files=files_to_send, timeout=60)
-
             if response.status_code == 200:
-                try:
-                    ai_results = response.json()
-                    return JsonResponse({'status': 'done', 'ai_data': ai_results})
-                except Exception:
-                    return JsonResponse({'status': 'error', 'message': 'AI server did not return valid JSON.'})
-            else:
-                return JsonResponse({'status': 'error', 'message': f'AI Server Error {response.status_code}'})
-
+                return JsonResponse({'status': 'done', 'ai_data': response.json()})
+            return JsonResponse({'status': 'error', 'message': f'AI Error {response.status_code}'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
     return JsonResponse({'status': 'error', 'message': 'Invalid Request'}, status=400)
