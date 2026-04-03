@@ -8,7 +8,7 @@ This is the Web interface of system using django
 
 ``` bash
 git clone https://github.com/Swaran47Git/AutoGrade-AI.git
-cd AutoGrade-AI
+cd AutoGrade-AI/DDS
 python -m venv .venv
 ```
 
