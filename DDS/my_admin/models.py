@@ -58,6 +58,9 @@ class DamageAnalysis(models.Model):
         blank=True,
         related_name='assigned_claims'
     )
+    yolo_output_image = models.ImageField(upload_to='yolo_results/', null=True, blank=True)
+    detected_parts = models.TextField(null=True, blank=True, help_text="e.g., Bumper: 0.05, Hood: 0.10")
+    total_damage_factor = models.FloatField(default=0.0)  # The sum of coefficients
 
     # Metadata
     car_details = models.CharField(max_length=100)
