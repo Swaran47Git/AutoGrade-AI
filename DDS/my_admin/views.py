@@ -1,4 +1,5 @@
 import re
+import requests
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -7,16 +8,6 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
 from django.utils import timezone
 from .models import VehicleValue, DamageAnalysis, UserProfile, InsuranceCompany, UserComplaint
-
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from .models import VehicleValue  # Our Car Database
-import re, requests
-
 
 
 # --- HELPER: SECURITY CHECK ---
@@ -95,7 +86,6 @@ def my_logout(request):
 
 @login_required
 def admin_dashboard(request):
-    # Redirect agents away from the upload tool
     if request.user.userprofile.role == 'Agent':
         return redirect('agent_dashboard')
 
@@ -127,40 +117,36 @@ def upload_images(request):
 
 @login_required
 def claim_history(request):
-    # Sorted by updated_at so users see their latest appeals at the top
     my_claims = DamageAnalysis.objects.filter(user=request.user).order_by('-updated_at')
     return render(request, "ClaimHistory.html", {'claims': my_claims})
 
 
 @login_required
 def claim_details(request, claim_id):
-    """Detailed view for users to see results and file appeals."""
     claim = get_object_or_404(DamageAnalysis, id=claim_id, user=request.user)
     return render(request, "ClaimDetails.html", {'claim': claim})
 
 
 @login_required
 def submit_appeal(request, claim_id):
-    """Handles the user's re-evaluation request (Max 2)."""
     claim = get_object_or_404(DamageAnalysis, id=claim_id, user=request.user)
     if request.method == "POST" and claim.appeal_count < 2:
         claim.user_appeal_reason = request.POST.get('appeal_reason')
         claim.appeal_count += 1
-        claim.status = 'Pending'  # This puts it back in the Agent's dashboard
-        claim.save()  # Triggers updated_at, moving it to the TOP of the Agent's queue
+        claim.status = 'Pending'
+        claim.save()
         messages.success(request, "Appeal sent to the Insurance Agent.")
     return redirect('claim_history')
 
 
 @login_required
 def admin_complaint(request, claim_id):
-    """Handles final escalation to the System Admin."""
     claim = get_object_or_404(DamageAnalysis, id=claim_id, user=request.user)
     if request.method == "POST":
         UserComplaint.objects.create(
             user=request.user,
             claim=claim,
-            subject=f"Tier 3 Dispute: {claim.car_details}",
+            subject=f"Final Dispute: {claim.car_details}",
             description=request.POST.get('description'),
             priority='High'
         )
@@ -187,7 +173,6 @@ def user_edit_claim(request, claim_id):
 @login_required
 @user_passes_test(is_agent, login_url='admin_dashboard')
 def agent_dashboard(request):
-    # Sorted by updated_at ensures that new APPEALS jump to the top of the list
     assigned_claims = DamageAnalysis.objects.filter(status='Pending').order_by('-updated_at')
     return render(request, "AgentDashboard.html", {'claims': assigned_claims})
 
@@ -199,7 +184,6 @@ def review_claim(request, claim_id):
 
     claim = get_object_or_404(DamageAnalysis, id=claim_id)
 
-    # Suggest a Market Value from database
     default_market_value = 0
     try:
         model_name = claim.car_details.split()[-1]
@@ -221,34 +205,32 @@ def review_claim(request, claim_id):
         claim.major_coeff = ma_c
         claim.agent_comment = request.POST.get('agent_comment')
 
-        # Mode A: Run AI Simulation (Keep in Agent Queue)
+        # --- HARDCODED AI SIMULATION LOGIC ---
         if "run_model" in request.POST:
-            current_coeff = float(mi_c)
-            if claim.damage_level == 'Moderate':
-                current_coeff = float(mo_c)
-            elif claim.damage_level in ['Severe', 'Major']:
-                current_coeff = float(ma_c)
+            # 1. Technical Data
+            claim.damage_level = "Moderate"
+            claim.detected_parts = "Front Bumper (0.05), Left Headlight (0.02), Hood Dent (0.03)"
 
-            claim.estimated_claim = float(m_val) * current_coeff
-            claim.save()  # updated_at refreshes, but status stays 'Pending'
-            messages.success(request, f"Simulation Success: ₹{claim.estimated_claim:,.2f}")
+            # 2. Summing Coefficients
+            claim.total_damage_factor = 0.10  # Hardcoded sum for demo
+
+            # 3. Simulated YOLO image path (Ensure this file exists in your media folder)
+            claim.yolo_output_image = "yolo_results/sample_yolo.jpg"
+
+            # 4. Final Calculation: Payout = Market Value * Sum(Coeffs)
+            claim.estimated_claim = float(m_val) * claim.total_damage_factor
+
+            claim.save()
+            messages.success(request, f"AI Simulation Complete: ₹{claim.estimated_claim:,.2f}")
             return redirect('review_claim', claim_id=claim.id)
 
-        # Mode B: Finalize Valuation (Send to User)
         if "finalize_valuation" in request.POST:
-            current_coeff = float(mi_c)
-            if claim.damage_level == 'Moderate':
-                current_coeff = float(mo_c)
-            elif claim.damage_level in ['Severe', 'Major']:
-                current_coeff = float(ma_c)
-
-            claim.estimated_claim = float(m_val) * current_coeff
+            # Finalize and move to user view
             claim.status = 'Approved'
             claim.save()
             messages.success(request, "Valuation finalized and sent to user.")
             return redirect('agent_dashboard')
 
-        # Generic Save
         claim.save()
         messages.success(request, "Progress saved.")
         return redirect('review_claim', claim_id=claim.id)
@@ -256,17 +238,9 @@ def review_claim(request, claim_id):
     context = {
         'claim': claim,
         'default_market_value': default_market_value,
-        'def_minor': 0.025,
-        'def_moderate': 0.05,
-        'def_major': 0.1
+        'def_minor': 0.025, 'def_moderate': 0.05, 'def_major': 0.1
     }
     return render(request, "ReviewClaim.html", context)
-
-
-@login_required
-@user_passes_test(is_agent, login_url='admin_dashboard')
-def manage_part_weights(request):
-    return render(request, "ManageWeights.html")
 
 
 # --- 4. ADMIN WORKFLOW ---
@@ -285,7 +259,6 @@ def admin_panel(request):
 
 @login_required
 def admin_complaints_view(request):
-    """System Admin view for escalated disputes."""
     if request.user.userprofile.role != 'Admin':
         return redirect('admin_dashboard')
     complaints = UserComplaint.objects.all().order_by('-created_at')
@@ -313,49 +286,32 @@ def grant_agent_status(request, user_id):
     return redirect('admin_panel')
 
 
-# --- 5. AJAX & UTILS ---
+# --- 5. AJAX & API UTILS ---
 
 def get_vehicle_details(request):
     make = request.GET.get('make')
     car_data = VehicleValue.objects.filter(make=make).values('model', 'year')
-
     return JsonResponse(list(car_data), safe=False)
 
 
-    return JsonResponse(list(car_data), safe=False)
-
-
-# 7. API Request for Yolo model
 def api_req(request):
+    """API gateway to the external YOLO AI server."""
     if request.method == 'POST':
-        image = request.FILES.getlist('images')
-        print(image, "image? whare")
+        images = request.FILES.getlist('images')
         files_to_send = []
-        for img in image:
-            print(img.name)
-            # Most YOLO/Flask setups expect 'images' or 'file'
+        for img in images:
             files_to_send.append(('image', (img.name, img.read(), img.content_type)))
 
-        #response = requests.post("http://192.168.1.15:5000/home", files=files_to_send)
-        # files_to_send = [('file', (img.name, img.read(), img.content_type)) for img in images]
-
         try:
-            ai_url = "http://192.168.29.58:5000/home"
+            ai_url = "http://192.168.29.58:5000/home"  # Ensure this matches your AI server IP
             response = requests.post(ai_url, files=files_to_send, timeout=60)
 
-            # --- DEBUGGING LINES ---
-            print(f"AI Server Status Code: {response.status_code}")
-            print(f"AI Server Raw Response: {response.text}")
-            # -----------------------
-
-            # Check if the response is actually JSON before parsing
             if response.status_code == 200:
                 try:
                     ai_results = response.json()
-                    print(ai_results)
                     return JsonResponse({'status': 'done', 'ai_data': ai_results})
                 except Exception:
-                    return JsonResponse({'status': 'error', 'message': 'AI server did not return JSON. Check AI terminal.'})
+                    return JsonResponse({'status': 'error', 'message': 'AI server did not return valid JSON.'})
             else:
                 return JsonResponse({'status': 'error', 'message': f'AI Server Error {response.status_code}'})
 
@@ -363,4 +319,3 @@ def api_req(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
     return JsonResponse({'status': 'error', 'message': 'Invalid Request'}, status=400)
-
