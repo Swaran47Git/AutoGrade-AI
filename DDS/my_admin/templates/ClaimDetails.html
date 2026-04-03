@@ -40,6 +40,7 @@
         .status-badge { padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; }
         .status-approved { background: #dcfce7; color: #166534; }
         .status-pending { background: #fef3c7; color: #92400e; }
+        .status-escalated { background: #fee2e2; color: #991b1b; }
 
         /* Info Grid */
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 40px; }
@@ -97,7 +98,7 @@
                     <span class="claim-id">Claim Reference #{{ claim.id }}</span>
                     <h2 style="margin-top: 5px;">{{ claim.car_details }}</h2>
                 </div>
-                <div class="status-badge {% if claim.status == 'Approved' %}status-approved{% else %}status-pending{% endif %}">
+                <div class="status-badge {% if claim.status == 'Approved' %}status-approved{% elif claim.status == 'Pending' %}status-pending{% else %}status-escalated{% endif %}">
                     <i class="fas {% if claim.status == 'Approved' %}fa-check-circle{% else %}fa-clock{% endif %}"></i>
                     {{ claim.status }}
                 </div>

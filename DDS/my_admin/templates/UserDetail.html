@@ -58,6 +58,7 @@
         .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
         .status-pending { background: #fef3c7; color: #92400e; }
         .status-approved { background: #dcfce7; color: #166534; }
+        .status-escalated { background: #fee2e2; color: #991b1b; }
 
         @media (max-width: 992px) {
             .detail-grid { grid-template-columns: 1fr; }
@@ -142,7 +143,7 @@
                             <td style="color: var(--gray); font-weight: 600;">{{ item.date_analyzed|date:"d/m/Y" }}</td>
                             <td style="font-weight: 600; color: var(--dark);">{{ item.car_details }}</td>
                             <td>
-                                <span class="badge {% if item.status == 'Pending' %}status-pending{% else %}status-approved{% endif %}">
+                                <span class="badge {% if item.status == 'Pending' %}status-pending{% elif item.status == 'Approved' %}status-approved{% else %}status-escalated{% endif %}">
                                     {{ item.status }}
                                 </span>
                             </td>
