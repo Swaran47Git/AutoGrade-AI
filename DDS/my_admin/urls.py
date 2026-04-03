@@ -34,7 +34,7 @@ urlpatterns = [
 
     # --- 5. Utilities & AJAX ---
     path('get-vehicle-details/', views.get_vehicle_details, name='get_vehicle_details'),
-    path('api_request/', views.api_req, name='api_req'),
+    path('api_req/', views.api_req, name='api_req'),
 ]
 
 # --- 6. Media File Serving (Crucial for Car Images) ---
