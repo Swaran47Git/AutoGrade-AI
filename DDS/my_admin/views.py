@@ -340,7 +340,7 @@ def api_req(request):
         # files_to_send = [('file', (img.name, img.read(), img.content_type)) for img in images]
 
         try:
-            ai_url = "http://127.0.0.1:5000/home"
+            ai_url = "http://192.168.29.58:5000/home"
             response = requests.post(ai_url, files=files_to_send, timeout=60)
 
             # --- DEBUGGING LINES ---
