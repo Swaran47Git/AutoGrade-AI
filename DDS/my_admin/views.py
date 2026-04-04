@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
 from django.utils import timezone
-from .models import VehicleValue, DamageAnalysis, UserProfile, InsuranceCompany, UserComplaint
+from .models import VehicleValue, DamageAnalysis, UserProfile, InsuranceCompany, UserComplaint, ClaimImage
 
 
 def is_agent(user):
@@ -89,13 +89,19 @@ def upload_images(request):
         vehicle_desc = manual if manual else f"{year} {make} {model}"
 
         # NOTE: When the model is active, you might call api_req here
-        DamageAnalysis.objects.create(
+        new_claim = DamageAnalysis.objects.create(
             user=request.user,
             car_details=vehicle_desc,
             status='Pending',
             damage_level='TBD',
             estimated_claim=0
         )
+        files = request.FILES.getlist('car_images')
+        for f in files:
+            ClaimImage.objects.create(
+                analysis=new_claim,  # Use 'analysis' here!
+                image=f
+            )
         messages.success(request, "Claim Submitted Successfully!")
         return redirect('claim_history')
     return redirect('admin_dashboard')
@@ -122,6 +128,8 @@ def submit_appeal(request, claim_id):
         claim.status = 'Pending'
         claim.save()
         messages.success(request, "Appeal sent to the Insurance Agent.")
+    else:
+        messages.error(request, "Max appeals reached. Please escalate to Admin.")
     return redirect('claim_history')
 
 
@@ -167,6 +175,7 @@ def review_claim(request, claim_id):
     claim = get_object_or_404(DamageAnalysis, id=claim_id)
     default_market_value = 0
     try:
+
         model_name = claim.car_details.split()[-1]
         vehicle = VehicleValue.objects.filter(model__icontains=model_name).first()
         if vehicle: default_market_value = vehicle.price
@@ -185,26 +194,53 @@ def review_claim(request, claim_id):
         claim.agent_comment = request.POST.get('agent_comment')
 
         if "run_model" in request.POST:
-            # --- START HARDCODED SIMULATION BLOCK ---
-            # To use the real model later, comment these 4 lines and uncomment the API section below
-            claim.damage_level = "Moderate"
-            claim.detected_parts = "Front Bumper (0.05), Left Headlight (0.02), Hood Dent (0.03)"
-            claim.total_damage_factor = 0.10
-            claim.yolo_output_image = "yolo_results/sample_yolo.jpg"
-            # --- END HARDCODED SIMULATION BLOCK ---
+            evidence_photos = ClaimImage.objects.filter(analysis=claim)
+            if not evidence_photos.exists():
+                messages.error(request, "No images found to analyze!")
+                return redirect('review_claim', claim_id=claim.id)
 
-            """
-            # --- REAL MODEL INTEGRATION (UNCOMMENT LATER) ---
-            # ai_response = api_req(request)
-            # if ai_response.status == 'done':
-            #     claim.damage_level = ai_response.ai_data['severity']
-            #     claim.detected_parts = ai_response.ai_data['parts']
-            #     claim.yolo_output_image = ai_response.ai_data['image_path']
-            """
+            files_to_send = []
+            opened_files = []  # We keep track so we can close them later
 
-            claim.estimated_claim = float(m_val) * claim.total_damage_factor
-            claim.save()
-            messages.success(request, f"AI Simulation Complete: ₹{claim.estimated_claim:,.2f}")
+            try:
+                for photo_record in evidence_photos:
+                    f = open(photo_record.image.path, 'rb')
+                    opened_files.append(f)
+
+                    files_to_send.append(('image', (photo_record.image.name, f, 'image/jpeg')))
+
+                # 3. Call your YOLO Server (Flask)
+                ai_url = "http://127.0.0.1:5000/home"
+                response = requests.post(ai_url, files=files_to_send, timeout=60)
+
+                if response.status_code == 200:
+                    ai_results = response.json()
+
+                    # 4. Update the Database with REAL data from AI
+                    claim.damage_level = ai_results.get('severity', 'Moderate')
+                    claim.detected_parts = ai_results.get('parts', 'Bumper, Hood')
+                    # We use the factor returned by AI (e.g. 0.12)
+                    claim.total_damage_factor = ai_results.get('total_damage_factor', 0.10)
+
+                    # CALCULATE PAYOUT: Market Value * AI Factor
+                    claim.estimated_claim = float(m_val) * float(claim.total_damage_factor)
+
+                    # Optional: If AI returns a processed image path
+                    # claim.yolo_output_image = ai_results.get('output_url')
+
+                    messages.success(request, f"AI Analysis Success: Factor {claim.total_damage_factor}")
+                else:
+                    messages.error(request, "AI Server is running but returned an error.")
+
+            except Exception as e:
+                messages.error(request, f"Connection to AI failed: {str(e)}")
+            finally:
+                # IMPORTANT: Always close files to prevent memory leaks/locks
+                for f in opened_files:
+                    f.close()
+
+            claim.save()  # Pushes AI results to my_admin_damageanalysis table
+
             return redirect('review_claim', claim_id=claim.id)
 
         if "finalize_valuation" in request.POST:
@@ -274,13 +310,12 @@ def get_vehicle_details(request):
     return JsonResponse(list(car_data), safe=False)
 
 
-def api_req(request):
-    """External YOLO Gateway (Keep for later use)"""
+def api_req(request,images):
     if request.method == 'POST':
-        images = request.FILES.getlist('images')
+        #images = request.FILES.getlist('images')
         files_to_send = [('image', (img.name, img.read(), img.content_type)) for img in images]
         try:
-            ai_url = "http://192.168.29.58:5000/home"
+            ai_url = "http://127.0.0.1:5000/home"
             response = requests.post(ai_url, files=files_to_send, timeout=60)
             if response.status_code == 200:
                 return JsonResponse({'status': 'done', 'ai_data': response.json()})
