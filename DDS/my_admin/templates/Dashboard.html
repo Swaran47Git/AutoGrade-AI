@@ -294,45 +294,7 @@
             }
 
             // Run Animation
-            document.getElementById('spinner').style.display = 'block';
-            const formData = new FormData();
-            for (let i = 0; i < ImagesFiles.length; i++) {
-               formData.append('images', ImagesFiles[i]);
-            }
-            //API Request for Yolo Model
-
-            //document.getElementById('spinner').style.display = 'none';
-            fetch('/api_req/', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: formData
-            })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('spinner').style.display = 'none';
-                alert("Success! Data saved to SQL and AI analysis complete.");
-                // No redirect happened. User is still on the same page!
-
-                alert('Analysis Successful!\n\nMarket Value and Damage Coefficients have been applied. Your estimated claim report is ready in the Reports section.');
-            });
-
-
-        }
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
+            //document.getElementById('spinner').style.display = 'block';
         }
     </script>
     {% endif %}
