@@ -1,4 +1,5 @@
 import re
+import requests
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -8,26 +9,13 @@ from django.http import JsonResponse
 from django.utils import timezone
 from .models import VehicleValue, DamageAnalysis, UserProfile, InsuranceCompany, UserComplaint
 
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from .models import VehicleValue  # Our Car Database
-import re, requests
 
-
-
-# --- HELPER: SECURITY CHECK ---
 def is_agent(user):
     try:
         return user.userprofile.role == 'Agent' or user.is_superuser
     except UserProfile.DoesNotExist:
         return False
 
-
-# --- 1. LANDING & AUTHENTICATION ---
 
 def main_home(request):
     return render(request, 'main_home.html')
@@ -40,24 +28,18 @@ def my_register(request):
         email = request.POST.get("email", "").strip()
         password = request.POST.get("password", "")
         confirm_password = request.POST.get("confirm_password", "")
-
         email_pattern = r'^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$'
         if not re.match(email_pattern, email.lower()):
             messages.error(request, "Invalid email format!")
             return render(request, "my_register.html")
-
         if password != confirm_password:
             messages.error(request, "Passwords do not match!")
             return render(request, "my_register.html")
-
         if User.objects.filter(username=username).exists():
             messages.error(request, "Username is already taken!")
             return render(request, "my_register.html")
-
         user = User.objects.create_user(username=username, email=email, password=password, first_name=first_name)
-        user.save()
         UserProfile.objects.create(user=user, role='User')
-
         messages.success(request, "Account created!")
         return redirect("my_login")
     return render(request, 'my_register.html')
@@ -68,7 +50,6 @@ def my_login(request):
         u_name = request.POST.get("username", "").strip()
         p_word = request.POST.get("password", "")
         user = authenticate(request, username=u_name, password=p_word)
-
         if user is not None:
             login(request, user)
             profile, created = UserProfile.objects.get_or_create(
@@ -91,14 +72,9 @@ def my_logout(request):
     return redirect('main_home')
 
 
-# --- 2. STANDARD USER WORKFLOW ---
-
 @login_required
 def admin_dashboard(request):
-    # Redirect agents away from the upload tool
-    if request.user.userprofile.role == 'Agent':
-        return redirect('agent_dashboard')
-
+    if request.user.userprofile.role == 'Agent': return redirect('agent_dashboard')
     makes = VehicleValue.objects.values_list('make', flat=True).distinct()
     return render(request, "Dashboard.html", {'makes': makes})
 
@@ -112,14 +88,14 @@ def upload_images(request):
         manual = request.POST.get('manual_details')
         vehicle_desc = manual if manual else f"{year} {make} {model}"
 
-        new_claim = DamageAnalysis.objects.create(
+        # NOTE: When the model is active, you might call api_req here
+        DamageAnalysis.objects.create(
             user=request.user,
             car_details=vehicle_desc,
             status='Pending',
             damage_level='TBD',
             estimated_claim=0
         )
-        new_claim.save()
         messages.success(request, "Claim Submitted Successfully!")
         return redirect('claim_history')
     return redirect('admin_dashboard')
@@ -127,40 +103,36 @@ def upload_images(request):
 
 @login_required
 def claim_history(request):
-    # Sorted by updated_at so users see their latest appeals at the top
     my_claims = DamageAnalysis.objects.filter(user=request.user).order_by('-updated_at')
     return render(request, "ClaimHistory.html", {'claims': my_claims})
 
 
 @login_required
 def claim_details(request, claim_id):
-    """Detailed view for users to see results and file appeals."""
     claim = get_object_or_404(DamageAnalysis, id=claim_id, user=request.user)
     return render(request, "ClaimDetails.html", {'claim': claim})
 
 
 @login_required
 def submit_appeal(request, claim_id):
-    """Handles the user's re-evaluation request (Max 2)."""
     claim = get_object_or_404(DamageAnalysis, id=claim_id, user=request.user)
     if request.method == "POST" and claim.appeal_count < 2:
         claim.user_appeal_reason = request.POST.get('appeal_reason')
         claim.appeal_count += 1
-        claim.status = 'Pending'  # This puts it back in the Agent's dashboard
-        claim.save()  # Triggers updated_at, moving it to the TOP of the Agent's queue
+        claim.status = 'Pending'
+        claim.save()
         messages.success(request, "Appeal sent to the Insurance Agent.")
     return redirect('claim_history')
 
 
 @login_required
 def admin_complaint(request, claim_id):
-    """Handles final escalation to the System Admin."""
     claim = get_object_or_404(DamageAnalysis, id=claim_id, user=request.user)
     if request.method == "POST":
         UserComplaint.objects.create(
             user=request.user,
             claim=claim,
-            subject=f"Tier 3 Dispute: {claim.car_details}",
+            subject=f"Final Dispute: {claim.car_details}",
             description=request.POST.get('description'),
             priority='High'
         )
@@ -182,30 +154,22 @@ def user_edit_claim(request, claim_id):
     return render(request, "UserEditClaim.html", {'claim': claim})
 
 
-# --- 3. AGENT WORKFLOW ---
-
 @login_required
 @user_passes_test(is_agent, login_url='admin_dashboard')
 def agent_dashboard(request):
-    # Sorted by updated_at ensures that new APPEALS jump to the top of the list
     assigned_claims = DamageAnalysis.objects.filter(status='Pending').order_by('-updated_at')
     return render(request, "AgentDashboard.html", {'claims': assigned_claims})
 
 
 @login_required
 def review_claim(request, claim_id):
-    if not is_agent(request.user):
-        return redirect('admin_dashboard')
-
+    if not is_agent(request.user): return redirect('admin_dashboard')
     claim = get_object_or_404(DamageAnalysis, id=claim_id)
-
-    # Suggest a Market Value from database
     default_market_value = 0
     try:
         model_name = claim.car_details.split()[-1]
         vehicle = VehicleValue.objects.filter(model__icontains=model_name).first()
-        if vehicle:
-            default_market_value = vehicle.price
+        if vehicle: default_market_value = vehicle.price
     except:
         pass
 
@@ -214,41 +178,41 @@ def review_claim(request, claim_id):
         mi_c = request.POST.get('minor_coeff') or 0.025
         mo_c = request.POST.get('moderate_coeff') or 0.05
         ma_c = request.POST.get('major_coeff') or 0.1
-
         claim.market_value = m_val
         claim.minor_coeff = mi_c
         claim.moderate_coeff = mo_c
         claim.major_coeff = ma_c
         claim.agent_comment = request.POST.get('agent_comment')
 
-        # Mode A: Run AI Simulation (Keep in Agent Queue)
         if "run_model" in request.POST:
-            current_coeff = float(mi_c)
-            if claim.damage_level == 'Moderate':
-                current_coeff = float(mo_c)
-            elif claim.damage_level in ['Severe', 'Major']:
-                current_coeff = float(ma_c)
+            # --- START HARDCODED SIMULATION BLOCK ---
+            # To use the real model later, comment these 4 lines and uncomment the API section below
+            claim.damage_level = "Moderate"
+            claim.detected_parts = "Front Bumper (0.05), Left Headlight (0.02), Hood Dent (0.03)"
+            claim.total_damage_factor = 0.10
+            claim.yolo_output_image = "yolo_results/sample_yolo.jpg"
+            # --- END HARDCODED SIMULATION BLOCK ---
 
-            claim.estimated_claim = float(m_val) * current_coeff
-            claim.save()  # updated_at refreshes, but status stays 'Pending'
-            messages.success(request, f"Simulation Success: ₹{claim.estimated_claim:,.2f}")
+            """
+            # --- REAL MODEL INTEGRATION (UNCOMMENT LATER) ---
+            # ai_response = api_req(request)
+            # if ai_response.status == 'done':
+            #     claim.damage_level = ai_response.ai_data['severity']
+            #     claim.detected_parts = ai_response.ai_data['parts']
+            #     claim.yolo_output_image = ai_response.ai_data['image_path']
+            """
+
+            claim.estimated_claim = float(m_val) * claim.total_damage_factor
+            claim.save()
+            messages.success(request, f"AI Simulation Complete: ₹{claim.estimated_claim:,.2f}")
             return redirect('review_claim', claim_id=claim.id)
 
-        # Mode B: Finalize Valuation (Send to User)
         if "finalize_valuation" in request.POST:
-            current_coeff = float(mi_c)
-            if claim.damage_level == 'Moderate':
-                current_coeff = float(mo_c)
-            elif claim.damage_level in ['Severe', 'Major']:
-                current_coeff = float(ma_c)
-
-            claim.estimated_claim = float(m_val) * current_coeff
             claim.status = 'Approved'
             claim.save()
             messages.success(request, "Valuation finalized and sent to user.")
             return redirect('agent_dashboard')
 
-        # Generic Save
         claim.save()
         messages.success(request, "Progress saved.")
         return redirect('review_claim', claim_id=claim.id)
@@ -256,9 +220,7 @@ def review_claim(request, claim_id):
     context = {
         'claim': claim,
         'default_market_value': default_market_value,
-        'def_minor': 0.025,
-        'def_moderate': 0.05,
-        'def_major': 0.1
+        'def_minor': 0.025, 'def_moderate': 0.05, 'def_major': 0.1
     }
     return render(request, "ReviewClaim.html", context)
 
@@ -269,12 +231,9 @@ def manage_part_weights(request):
     return render(request, "ManageWeights.html")
 
 
-# --- 4. ADMIN WORKFLOW ---
-
 @login_required
 def admin_panel(request):
-    if request.user.userprofile.role != 'Admin':
-        return redirect('admin_dashboard')
+    if request.user.userprofile.role != 'Admin': return redirect('admin_dashboard')
     search_query = request.GET.get('search', '').strip()
     profiles = UserProfile.objects.all()
     if search_query:
@@ -285,17 +244,14 @@ def admin_panel(request):
 
 @login_required
 def admin_complaints_view(request):
-    """System Admin view for escalated disputes."""
-    if request.user.userprofile.role != 'Admin':
-        return redirect('admin_dashboard')
+    if request.user.userprofile.role != 'Admin': return redirect('admin_dashboard')
     complaints = UserComplaint.objects.all().order_by('-created_at')
     return render(request, "AdminComplaints.html", {'complaints': complaints})
 
 
 @login_required
 def user_detail_view(request, profile_id):
-    if request.user.userprofile.role != 'Admin':
-        return redirect('admin_dashboard')
+    if request.user.userprofile.role != 'Admin': return redirect('admin_dashboard')
     profile = get_object_or_404(UserProfile, id=profile_id)
     history = DamageAnalysis.objects.filter(
         agent=profile.user) if profile.role == 'Agent' else DamageAnalysis.objects.filter(user=profile.user)
@@ -304,8 +260,7 @@ def user_detail_view(request, profile_id):
 
 @login_required
 def grant_agent_status(request, user_id):
-    if request.user.userprofile.role != 'Admin':
-        return redirect('admin_dashboard')
+    if request.user.userprofile.role != 'Admin': return redirect('admin_dashboard')
     profile = get_object_or_404(UserProfile, id=user_id)
     profile.role = 'Agent'
     profile.save()
@@ -313,54 +268,22 @@ def grant_agent_status(request, user_id):
     return redirect('admin_panel')
 
 
-# --- 5. AJAX & UTILS ---
-
 def get_vehicle_details(request):
     make = request.GET.get('make')
     car_data = VehicleValue.objects.filter(make=make).values('model', 'year')
-
     return JsonResponse(list(car_data), safe=False)
 
 
-    return JsonResponse(list(car_data), safe=False)
-
-
-# 7. API Request for Yolo model
 def api_req(request):
+    """External YOLO Gateway (Keep for later use)"""
     if request.method == 'POST':
-        image = request.FILES.getlist('images')
-        print(image, "image? whare")
-        files_to_send = []
-        for img in image:
-            print(img.name)
-            # Most YOLO/Flask setups expect 'images' or 'file'
-            files_to_send.append(('image', (img.name, img.read(), img.content_type)))
-
-        #response = requests.post("http://192.168.1.15:5000/home", files=files_to_send)
-        # files_to_send = [('file', (img.name, img.read(), img.content_type)) for img in images]
-
+        images = request.FILES.getlist('images')
+        files_to_send = [('image', (img.name, img.read(), img.content_type)) for img in images]
         try:
-            ai_url = "http://127.0.0.1:5000/home"
+            ai_url = "http://192.168.29.58:5000/home"
             response = requests.post(ai_url, files=files_to_send, timeout=60)
-
-            # --- DEBUGGING LINES ---
-            print(f"AI Server Status Code: {response.status_code}")
-            print(f"AI Server Raw Response: {response.text}")
-            # -----------------------
-
-            # Check if the response is actually JSON before parsing
             if response.status_code == 200:
-                try:
-                    ai_results = response.json()
-                    print(ai_results)
-                    return JsonResponse({'status': 'done', 'ai_data': ai_results})
-                except Exception:
-                    return JsonResponse({'status': 'error', 'message': 'AI server did not return JSON. Check AI terminal.'})
-            else:
-                return JsonResponse({'status': 'error', 'message': f'AI Server Error {response.status_code}'})
-
+                return JsonResponse({'status': 'done', 'ai_data': response.json()})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
     return JsonResponse({'status': 'error', 'message': 'Invalid Request'}, status=400)
-

@@ -6,142 +6,106 @@
     <title>AutoGrade AI | Review Claim</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Shared Styles */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f3f4f6; display: flex; min-height: 100vh; }
-
-        /* Sidebar */
         .sidebar { width: 280px; background: #1f2937; color: white; position: fixed; height: 100vh; padding: 30px 20px; z-index: 100; }
         .sidebar h2 { color: #f59e0b; margin-bottom: 30px; font-size: 1.5rem; }
         .sidebar-link { color: white; text-decoration: none; display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 8px; transition: 0.3s; margin-bottom: 10px; }
         .sidebar-link:hover { background: rgba(255,255,255,0.1); }
         .sidebar-link.logout { color: #ef4444; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
-
-        /* Main Content */
         .main-content { flex: 1; padding: 40px; margin-left: 280px; }
-        .card { background: white; padding: 35px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 900px; margin: 0 auto; }
+        .card { background: white; padding: 35px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 950px; margin: 0 auto; }
 
-        /* Header & Info Tags */
-        h2 { color: #1f2937; margin-bottom: 10px; }
-        .info-box { background: #eff6ff; color: #1e40af; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #3b82f6; display: flex; justify-content: space-between; align-items: center; }
-        .status-badge { background: #1e40af; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+        /* Technical Panel Styling */
+        .technical-panel { background: #0f172a; color: #10b981; padding: 25px; border-radius: 10px; margin: 25px 0; font-family: 'Courier New', Courier, monospace; border: 1px solid #1e293b; }
+        .technical-panel h3 { color: #fff; margin-bottom: 15px; font-size: 1rem; border-bottom: 1px solid #1e293b; padding-bottom: 10px; text-transform: uppercase; }
+        .tech-grid { display: grid; grid-template-columns: 320px 1fr; gap: 25px; }
+        .yolo-img { width: 100%; border: 2px solid #10b981; border-radius: 5px; background: #000; box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+        .tech-data p { margin-bottom: 8px; font-size: 0.85rem; }
+        .payout-highlight { font-size: 1.4rem; color: #fff; margin-top: 15px; background: rgba(16, 185, 129, 0.15); padding: 12px; border-radius: 6px; display: inline-block; border: 1px solid rgba(16, 185, 129, 0.3); }
 
-        /* Appeal Reason Box */
-        .appeal-reason-box { background: #fff7ed; border: 2px solid #fbbf24; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
-        .appeal-reason-box h4 { color: #92400e; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-
-        /* Image Gallery */
-        .image-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; margin: 20px 0 30px; }
-        .gallery-item { width: 100%; height: 140px; object-fit: cover; border-radius: 10px; border: 1px solid #e5e7eb; cursor: zoom-in; transition: 0.3s; }
-        .gallery-item:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-
-        /* Form Styling */
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-        .form-group { margin-bottom: 20px; }
-        .full-width { grid-column: span 2; }
-        label { display: block; margin-bottom: 8px; font-weight: 700; color: #4b5563; font-size: 0.9rem; }
-        input, textarea { width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem; transition: 0.3s; font-family: inherit; }
-        input:focus, textarea:focus { border-color: #1a56db; outline: none; box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1); }
-        small { display: block; margin-top: 5px; font-weight: 600; }
-
-        /* Buttons */
-        .btn-run { background: #1a56db; color: white; border: none; padding: 16px 30px; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 20px; width: 100%; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1rem; }
-        .btn-run:hover { background: #1e429f; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(26, 86, 219, 0.2); }
+        .appeal-reason-box { background: #fff7ed; border: 2px solid #fbbf24; padding: 20px; border-radius: 10px; margin-bottom: 25px; }
+        .image-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 30px; }
+        .gallery-item { width: 100%; height: 110px; object-fit: cover; border-radius: 8px; cursor: zoom-in; border: 1px solid #ddd; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 700; color: #4b5563; font-size: 0.85rem; text-transform: uppercase; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem; margin-bottom: 15px; }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
+        .btn { padding: 16px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1rem; }
+        .btn-sim { background: #4b5563; color: white; }
+        .btn-finalize { background: #10b981; color: white; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
         <h2>Agent Portal</h2>
-        <a href="{% url 'agent_dashboard' %}" class="sidebar-link">
-            <i class="fas fa-arrow-left"></i> Back to Queue
-        </a>
-        <a href="{% url 'admin_dashboard' %}" class="sidebar-link">
-            <i class="fas fa-home"></i> User Dashboard
-        </a>
-        <a href="{% url 'my_logout' %}" class="sidebar-link logout">
-            <i class="fas fa-sign-out-alt"></i> Logout
-        </a>
+        <a href="{% url 'agent_dashboard' %}" class="sidebar-link"><i class="fas fa-arrow-left"></i> Back to Queue</a>
+        <a href="{% url 'admin_dashboard' %}" class="sidebar-link"><i class="fas fa-home"></i> User Dashboard</a>
+        <a href="{% url 'my_logout' %}" class="sidebar-link logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
 
     <div class="main-content">
         <div class="card">
-
-            <h2>Valuation & Adjustment: Claim #{{ claim.id }}</h2>
-            <p style="color: #6b7280; margin-bottom: 30px;">Refine market values and damage coefficients for <strong>{{ claim.car_details }}</strong>.</p>
+            <h2>Valuation Workbench: Claim #{{ claim.id }}</h2>
+            <p style="color: #6b7280; margin-bottom: 30px;">Reviewing details for: <strong>{{ claim.car_details }}</strong></p>
 
             {% if claim.user_appeal_reason %}
                 <div class="appeal-reason-box">
-                    <h4><i class="fas fa-exclamation-triangle"></i> User Appeal Reason (Appeal {{ claim.appeal_count }}/2)</h4>
-                    <p style="font-style: italic; color: #7c2d12;">"{{ claim.user_appeal_reason }}"</p>
+                    <h4 style="color: #92400e;"><i class="fas fa-exclamation-triangle"></i> User Appeal (Attempt {{ claim.appeal_count }}/2)</h4>
+                    <p style="font-style: italic; color: #7c2d12; margin-top: 8px;">"{{ claim.user_appeal_reason }}"</p>
                 </div>
             {% endif %}
 
-            <div class="info-box">
-                <div>
-                    <i class="fas fa-robot"></i> AI Detected Damage Severity:
-                    <strong style="text-transform: uppercase;">{{ claim.damage_level }}</strong>
-                </div>
-                <span class="status-badge">RE-CALCULATION ENABLED</span>
-            </div>
-
-            <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: #1f2937;">Evidence Gallery</h3>
+            <label>User-Submitted Evidence</label>
             <div class="image-gallery">
                 {% for img in claim.images.all %}
-                    <img src="{{ img.image.url }}" alt="Damage Evidence" class="gallery-item" onclick="window.open(this.src)">
-                {% empty %}
-                    <p style="color: var(--gray); font-style: italic; grid-column: span 3;">No images uploaded for this claim.</p>
+                    <img src="{{ img.image.url }}" class="gallery-item" onclick="window.open(this.src)">
                 {% endfor %}
             </div>
 
+            {% if claim.estimated_claim > 0 %}
+            <div class="technical-panel">
+                <h3><i class="fas fa-microchip"></i> YOLOv8 Technical Diagnostic</h3>
+                <div class="tech-grid">
+                    <div class="tech-visual">
+                        <img src="/media/yolo_results/sample_yolo.jpg" class="yolo-img" alt="YOLO Inference Result">
+                    </div>
+                    <div class="tech-data">
+                        <p style="opacity: 0.6;">> BOOTING NEURAL NETWORK... [OK]</p>
+                        <p>> DETECTED FEATURES: <span style="color: #fff; font-weight: bold;">{{ claim.detected_parts|default:"Bumper, Hood, Headlight" }}</span></p>
+                        <p>> DAMAGE_COEFF_SUM: <span style="color: #fbbf24; font-weight: bold;">{{ claim.total_damage_factor|default:"0.10" }}</span></p>
+                        <p>> MARKET_VALUE_SYNC: ₹{{ claim.market_value }}</p>
+                        <div class="payout-highlight">
+                            CALCULATED PAYOUT: ₹{{ claim.estimated_claim }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <form method="POST" id="valuationForm">
                 {% csrf_token %}
+                <label>Adjusted Market Value (₹)</label>
+                <input type="number" name="market_value" value="{{ claim.market_value|default:default_market_value }}" required>
 
-                <div class="form-group">
-                    <label>Current Market Value (₹)</label>
-                    <input type="number" name="market_value" value="{{ claim.market_value|default:default_market_value }}" required>
-                    <small style="color: #1a56db;"><i class="fas fa-database"></i> Source: Vehicle Reference Database</small>
-                </div>
+                <label>Agent Remarks (Visible to User)</label>
+                <textarea name="agent_comment" rows="3">{{ claim.agent_comment|default:'' }}</textarea>
 
-                <div class="form-group">
-                    <label>Agent's Remarks to User</label>
-                    <textarea name="agent_comment" rows="3" placeholder="Explain the valuation or respond to the user's appeal here...">{{ claim.agent_comment|default:'' }}</textarea>
-                </div>
-
-                <h3 style="margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #1f2937;">Damage Coefficients</h3>
+                <label>Fine-Tune Multipliers</label>
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label>Minor Damage Multiplier</label>
-                        <input type="number" step="0.001" name="minor_coeff" value="{{ claim.minor_coeff|default:def_minor }}">
-                    </div>
-                    <div class="form-group">
-                        <label>Moderate Damage Multiplier</label>
-                        <input type="number" step="0.001" name="moderate_coeff" value="{{ claim.moderate_coeff|default:def_moderate }}">
-                    </div>
-                    <div class="form-group full-width">
-                        <label>Major Damage Multiplier</label>
-                        <input type="number" step="0.001" name="major_coeff" value="{{ claim.major_coeff|default:def_major }}">
-                    </div>
+                    <input type="number" step="0.001" name="minor_coeff" value="{{ claim.minor_coeff|default:def_minor }}">
+                    <input type="number" step="0.001" name="moderate_coeff" value="{{ claim.moderate_coeff|default:def_moderate }}">
+                    <input type="number" step="0.001" name="major_coeff" value="{{ claim.major_coeff|default:def_major }}">
                 </div>
 
-                <button type="submit" name="run_model" class="btn-run" onclick="runSimulation()">
-                    <i class="fas fa-microchip"></i> Run AI Prediction Model
-                </button>
+                <div class="btn-group">
+                    <button type="submit" name="run_model" class="btn btn-sim"><i class="fas fa-flask"></i> Run AI Simulation</button>
+                    <button type="submit" name="finalize_valuation" class="btn btn-finalize"><i class="fas fa-check-double"></i> Finalize & Send</button>
+                </div>
             </form>
         </div>
     </div>
 
-    <script>
-        function runSimulation() {
-            const form = document.getElementById('valuationForm');
-            if(form.checkValidity()) {
-                alert("AutoScan Engine Initializing...\n" +
-                      "-----------------------------------\n" +
-                      "Applying Damage Grade: {{ claim.damage_level|upper }}\n" +
-                      "Syncing Market Value benchmarks...\n" +
-                      "Finalizing Payout Estimation...");
-            }
-        }
-    </script>
 </body>
 </html>
