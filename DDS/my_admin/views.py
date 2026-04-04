@@ -9,17 +9,14 @@ from django.http import JsonResponse
 from django.utils import timezone
 from .models import VehicleValue, DamageAnalysis, UserProfile, InsuranceCompany, UserComplaint
 
-
 def is_agent(user):
     try:
         return user.userprofile.role == 'Agent' or user.is_superuser
     except UserProfile.DoesNotExist:
         return False
 
-
 def main_home(request):
     return render(request, 'main_home.html')
-
 
 def my_register(request):
     if request.method == "POST":
@@ -44,7 +41,6 @@ def my_register(request):
         return redirect("my_login")
     return render(request, 'my_register.html')
 
-
 def my_login(request):
     if request.method == "POST":
         u_name = request.POST.get("username", "").strip()
@@ -56,28 +52,22 @@ def my_login(request):
                 user=user,
                 defaults={'role': 'Admin' if user.is_superuser else 'User'}
             )
-            if profile.role == 'Admin':
-                return redirect('admin_panel')
-            elif profile.role == 'Agent':
-                return redirect('agent_dashboard')
-            else:
-                return redirect('admin_dashboard')
+            if profile.role == 'Admin': return redirect('admin_panel')
+            elif profile.role == 'Agent': return redirect('agent_dashboard')
+            else: return redirect('admin_dashboard')
         else:
             messages.error(request, "Invalid credentials.")
     return render(request, 'my_login.html')
 
-
 def my_logout(request):
     logout(request)
     return redirect('main_home')
-
 
 @login_required
 def admin_dashboard(request):
     if request.user.userprofile.role == 'Agent': return redirect('agent_dashboard')
     makes = VehicleValue.objects.values_list('make', flat=True).distinct()
     return render(request, "Dashboard.html", {'makes': makes})
-
 
 @login_required
 def upload_images(request):
@@ -87,8 +77,6 @@ def upload_images(request):
         year = request.POST.get('year')
         manual = request.POST.get('manual_details')
         vehicle_desc = manual if manual else f"{year} {make} {model}"
-
-        # NOTE: When the model is active, you might call api_req here
         DamageAnalysis.objects.create(
             user=request.user,
             car_details=vehicle_desc,
@@ -100,18 +88,15 @@ def upload_images(request):
         return redirect('claim_history')
     return redirect('admin_dashboard')
 
-
 @login_required
 def claim_history(request):
     my_claims = DamageAnalysis.objects.filter(user=request.user).order_by('-updated_at')
     return render(request, "ClaimHistory.html", {'claims': my_claims})
 
-
 @login_required
 def claim_details(request, claim_id):
     claim = get_object_or_404(DamageAnalysis, id=claim_id, user=request.user)
     return render(request, "ClaimDetails.html", {'claim': claim})
-
 
 @login_required
 def submit_appeal(request, claim_id):
@@ -123,7 +108,6 @@ def submit_appeal(request, claim_id):
         claim.save()
         messages.success(request, "Appeal sent to the Insurance Agent.")
     return redirect('claim_history')
-
 
 @login_required
 def admin_complaint(request, claim_id):
@@ -139,7 +123,6 @@ def admin_complaint(request, claim_id):
         messages.warning(request, "Claim escalated to System Administrator.")
     return redirect('claim_history')
 
-
 @login_required
 def user_edit_claim(request, claim_id):
     claim = get_object_or_404(DamageAnalysis, id=claim_id, user=request.user)
@@ -153,13 +136,11 @@ def user_edit_claim(request, claim_id):
         return redirect('claim_history')
     return render(request, "UserEditClaim.html", {'claim': claim})
 
-
 @login_required
 @user_passes_test(is_agent, login_url='admin_dashboard')
 def agent_dashboard(request):
     assigned_claims = DamageAnalysis.objects.filter(status='Pending').order_by('-updated_at')
     return render(request, "AgentDashboard.html", {'claims': assigned_claims})
-
 
 @login_required
 def review_claim(request, claim_id):
@@ -170,42 +151,28 @@ def review_claim(request, claim_id):
         model_name = claim.car_details.split()[-1]
         vehicle = VehicleValue.objects.filter(model__icontains=model_name).first()
         if vehicle: default_market_value = vehicle.price
-    except:
-        pass
+    except: pass
 
     if request.method == "POST":
-        m_val = request.POST.get('market_value') or 0
-        mi_c = request.POST.get('minor_coeff') or 0.025
-        mo_c = request.POST.get('moderate_coeff') or 0.05
-        ma_c = request.POST.get('major_coeff') or 0.1
+        m_val = float(request.POST.get('market_value') or 0)
+        mi_c = float(request.POST.get('minor_coeff') or 0.025)
+        mo_c = float(request.POST.get('moderate_coeff') or 0.05)
+        ma_c = float(request.POST.get('major_coeff') or 0.1)
+
         claim.market_value = m_val
         claim.minor_coeff = mi_c
         claim.moderate_coeff = mo_c
         claim.major_coeff = ma_c
         claim.agent_comment = request.POST.get('agent_comment')
 
-        if "run_model" in request.POST:
-            # --- START HARDCODED SIMULATION BLOCK ---
-            # To use the real model later, comment these 4 lines and uncomment the API section below
-            claim.damage_level = "Moderate"
-            claim.detected_parts = "Front Bumper (0.05), Left Headlight (0.02), Hood Dent (0.03)"
-            claim.total_damage_factor = 0.10
-            claim.yolo_output_image = "yolo_results/sample_yolo.jpg"
-            # --- END HARDCODED SIMULATION BLOCK ---
+        # Logic-based calculation instead of hardcoding
+        current_coeff = mi_c
+        if claim.damage_level == 'Moderate':
+            current_coeff = mo_c
+        elif claim.damage_level in ['Severe', 'Major']:
+            current_coeff = ma_c
 
-            """
-            # --- REAL MODEL INTEGRATION (UNCOMMENT LATER) ---
-            # ai_response = api_req(request)
-            # if ai_response.status == 'done':
-            #     claim.damage_level = ai_response.ai_data['severity']
-            #     claim.detected_parts = ai_response.ai_data['parts']
-            #     claim.yolo_output_image = ai_response.ai_data['image_path']
-            """
-
-            claim.estimated_claim = float(m_val) * claim.total_damage_factor
-            claim.save()
-            messages.success(request, f"AI Simulation Complete: ₹{claim.estimated_claim:,.2f}")
-            return redirect('review_claim', claim_id=claim.id)
+        claim.estimated_claim = m_val * current_coeff
 
         if "finalize_valuation" in request.POST:
             claim.status = 'Approved'
@@ -224,12 +191,10 @@ def review_claim(request, claim_id):
     }
     return render(request, "ReviewClaim.html", context)
 
-
 @login_required
 @user_passes_test(is_agent, login_url='admin_dashboard')
 def manage_part_weights(request):
     return render(request, "ManageWeights.html")
-
 
 @login_required
 def admin_panel(request):
@@ -237,10 +202,8 @@ def admin_panel(request):
     search_query = request.GET.get('search', '').strip()
     profiles = UserProfile.objects.all()
     if search_query:
-        profiles = profiles.filter(user__username__icontains=search_query) | profiles.filter(
-            user__first_name__icontains=search_query)
+        profiles = profiles.filter(user__username__icontains=search_query) | profiles.filter(user__first_name__icontains=search_query)
     return render(request, "AdminPanel.html", {'profiles': profiles, 'search_query': search_query})
-
 
 @login_required
 def admin_complaints_view(request):
@@ -248,15 +211,12 @@ def admin_complaints_view(request):
     complaints = UserComplaint.objects.all().order_by('-created_at')
     return render(request, "AdminComplaints.html", {'complaints': complaints})
 
-
 @login_required
 def user_detail_view(request, profile_id):
     if request.user.userprofile.role != 'Admin': return redirect('admin_dashboard')
     profile = get_object_or_404(UserProfile, id=profile_id)
-    history = DamageAnalysis.objects.filter(
-        agent=profile.user) if profile.role == 'Agent' else DamageAnalysis.objects.filter(user=profile.user)
+    history = DamageAnalysis.objects.filter(agent=profile.user) if profile.role == 'Agent' else DamageAnalysis.objects.filter(user=profile.user)
     return render(request, "UserDetail.html", {'profile': profile, 'history': history.order_by('-updated_at')})
-
 
 @login_required
 def grant_agent_status(request, user_id):
@@ -267,15 +227,12 @@ def grant_agent_status(request, user_id):
     messages.success(request, f"{profile.user.username} is now an Insurance Agent.")
     return redirect('admin_panel')
 
-
 def get_vehicle_details(request):
     make = request.GET.get('make')
     car_data = VehicleValue.objects.filter(make=make).values('model', 'year')
     return JsonResponse(list(car_data), safe=False)
 
-
 def api_req(request):
-    """External YOLO Gateway (Keep for later use)"""
     if request.method == 'POST':
         images = request.FILES.getlist('images')
         files_to_send = [('image', (img.name, img.read(), img.content_type)) for img in images]
