@@ -210,7 +210,7 @@ def review_claim(request, claim_id):
                     files_to_send.append(('image', (photo_record.image.name, f, 'image/jpeg')))
 
                 # 3. Call your YOLO Server (Flask)
-                ai_url = "http://127.0.0.1:5000/home"
+                ai_url = "http://26.185.160.119:5000/home"
                 response = requests.post(ai_url, files=files_to_send, timeout=60)
 
                 if response.status_code == 200:
