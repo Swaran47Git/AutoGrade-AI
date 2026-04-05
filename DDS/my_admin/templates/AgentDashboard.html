@@ -100,6 +100,10 @@
                 <i class="fas fa-inbox" style="color: var(--primary); font-size: 1.5rem;"></i>
                 <h2>Active Submissions Queue</h2>
             </div>
+            <input type="text" id="agentSearch" onkeyup="simpleSearch()"
+               placeholder="Dynamic search by name or vehicle..."
+               class="search-bar"
+               style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: white;">
 
             <table>
                 <thead>
@@ -156,12 +160,30 @@
                         </td>
                     </tr>
                     {% empty %}
-                    <!-- ... empty state code ... -->
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+    <script>
+function simpleSearch() {
+    // 1. Get the text from the search box
+    let input = document.getElementById("agentSearch").value.toLowerCase();
+    // 2. Get all rows in your table body
+    let rows = document.querySelectorAll("table tbody tr");
 
+    rows.forEach(row => {
+        // 3. Get the text content of the entire row
+        let rowText = row.textContent.toLowerCase();
+
+        // 4. If the text is found, show the row; otherwise, hide it
+        if (rowText.includes(input)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+</script>
 </body>
 </html>

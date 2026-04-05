@@ -39,7 +39,7 @@ label { display: block; margin-bottom: 8px; font-weight: 700; color: #4b5563; fo
 input[type="number"], textarea {
     width: 100%;
     padding: 12px;
-    background: #f8fafc; /* Subtle light background for inputs in the white card */
+    background: #f8fafc;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     font-size: 1rem;
