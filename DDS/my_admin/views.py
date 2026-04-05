@@ -68,6 +68,9 @@ def my_login(request):
 
 
 def my_logout(request):
+    storage = messages.get_messages(request)
+    for _ in storage:
+        pass  # Just iterating through them clears the queue
     logout(request)
     return redirect('main_home')
 
@@ -222,7 +225,6 @@ def review_claim(request, claim_id):
                 if response.status_code == 200:
                     ai_results = response.json()
                     detections_data = ai_results.get('detections', [])
-
                     # --- CLEAN 5 RELATIONAL LOGIC ---
                     # 4. Clear any old AI detections before saving new ones (Prevent Duplicates)
                     claim.detections.all().delete()
@@ -234,29 +236,31 @@ def review_claim(request, claim_id):
                     # 5. Create a REAL database row for every single detection
                     for det in detections_data:
                         sev = det.get('severity', 'minor').lower()
+                        ai_filename = det.get('filename', '')
+                        clean_name = ai_filename.split('/')[-1]
 
-                        # Create the ledger entry
+                        # Finding the correct photo
+                        correct_photo = claim.images.filter(image__icontains=clean_name).first()
+                        if not correct_photo:
+                            correct_photo = claim.images.first()
+
+                        # 2. CREATE THE DATABASE ROW (Must happen inside the loop)
                         DamageDetection.objects.create(
                             analysis=claim,
                             severity=sev,
-                            box_coords=str(det.get('box')),  # [x1, y1, x2, y2]
-                            # Link to the first image for visual reference
-                            source_image=evidence_photos.first()
+                            box_coords=str(det.get('box')),
+                            source_image=correct_photo,
+                            # part_name=f"Damage on {clean_name}"
                         )
 
-                        # 6. Additive Math Logic
+                        # 3. Additive Math (Must happen inside the loop)
                         if sev == 'major':
-                            total_coeff += float(ma_c);
-                            counts['Major'] += 1
-                            highest_sev = 'Major'
+                            total_coeff += float(ma_c); counts['Major'] += 1; highest_sev = 'Major'
                         elif sev == 'moderate':
-                            total_coeff += float(mo_c);
-                            counts['Moderate'] += 1
+                            total_coeff += float(mo_c); counts['Moderate'] += 1
                             if highest_sev != 'Major': highest_sev = 'Moderate'
                         else:
-                            total_coeff += float(mi_c);
-                            counts['Minor'] += 1
-
+                            total_coeff += float(mi_c); counts['Minor'] += 1
                     # 7. Update the Master Claim (DamageAnalysis table)
                     summary = [f"{k}({v})" for k, v in counts.items() if v > 0]
                     claim.detected_parts = ", ".join(summary)
