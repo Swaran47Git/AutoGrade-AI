@@ -56,6 +56,27 @@
 
         .form-container { padding: 40px; }
 
+        /* NEW: Styled Error Alert */
+        .error-alert {
+            background-color: #fee2e2;
+            color: var(--danger);
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+            border-left: 5px solid var(--danger);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
         .form-group { margin-bottom: 25px; position: relative; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark); font-size: 0.95rem; }
         .form-group i { position: absolute; left: 15px; top: 42px; color: var(--gray); font-size: 1.1rem; z-index: 2; }
@@ -76,11 +97,6 @@
             border-color: var(--primary);
             background-color: white;
             box-shadow: 0 0 0 4px rgba(26, 86, 219, 0.1);
-        }
-
-        .form-group input:invalid:not(:placeholder-shown) {
-            border-color: var(--danger);
-            background-color: #fffafb;
         }
 
         .password-strength { margin-top: 8px; height: 4px; background-color: #e5e7eb; border-radius: 2px; overflow: hidden; }
@@ -119,6 +135,16 @@
         </div>
 
         <div class="form-container">
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="error-alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
             <form method="POST" action="{% url 'my_register' %}">
                 {% csrf_token %}
 
@@ -143,7 +169,7 @@
                            placeholder="example@gmail.com"
                            required
                            pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-                           title="Please enter a valid email address">
+                           title="Please enter a valid email address (e.g. name@domain.com)">
                 </div>
 
                 <div class="form-group">
@@ -208,9 +234,12 @@
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm_password').value;
             const confirmInput = document.getElementById('confirm_password');
-            confirmInput.style.borderColor = (confirmPassword === password && confirmPassword !== "") ? '#10b981' : '#dc2626';
+            if (confirmPassword === "") {
+                confirmInput.style.borderColor = "#e5e7eb";
+            } else {
+                confirmInput.style.borderColor = (confirmPassword === password) ? '#10b981' : '#dc2626';
+            }
         }
     </script>
 </body>
 </html>
-

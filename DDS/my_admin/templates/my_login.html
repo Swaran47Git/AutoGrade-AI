@@ -6,7 +6,6 @@
     <title>AutoGrade AI | Sign In</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Essential Styles Kept */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         :root {
             --primary: #1a56db;
@@ -49,11 +48,10 @@
             padding: 40px 30px;
             text-align: center;
             position: relative;
-            overflow: hidden;
         }
 
-        .header i { font-size: 4rem; margin-bottom: 20px; position: relative; z-index: 1; }
-        .header h1 { font-size: 2rem; margin-bottom: 10px; position: relative; z-index: 1; }
+        .header i { font-size: 4rem; margin-bottom: 20px; }
+        .header h1 { font-size: 2rem; margin-bottom: 10px; }
 
         .form-container { padding: 40px; }
 
@@ -109,7 +107,6 @@
 
         .register-link a { color: var(--primary); text-decoration: none; font-weight: 600; }
 
-        /* Error handling for local context */
         .error-alert {
             background-color: #fee2e2;
             color: var(--danger);
@@ -133,6 +130,16 @@
         </div>
 
         <div class="form-container">
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="error-alert">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
             <form method="POST" action="{% url 'my_login' %}">
                 {% csrf_token %}
 
