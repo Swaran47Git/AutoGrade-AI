@@ -20,6 +20,6 @@ local_settings.py
 .DS_Store
 
 # Media and Static files
-DDS/media/
+media/
 staticfiles/
 

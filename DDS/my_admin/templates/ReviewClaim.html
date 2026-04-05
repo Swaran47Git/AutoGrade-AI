@@ -37,9 +37,21 @@
     </style>
 </head>
 <body>
-
     <div class="sidebar">
-
+        <div class="sidebar-header">
+            <div class="logo"><i class="fas fa-car-crash"></i><span>AutoGrade<span>AI</span></span></div>
+        </div>
+        <div class="nav-menu">
+            <a href="{% url 'admin_dashboard' %}" class="nav-item">
+                <i class="fas fa-arrow-left"></i><span>Back to Dashboard</span>
+            </a>
+            <a href="{% url 'claim_history' %}" class="nav-item">
+                <i class="fas fa-history"></i><span>Claim History</span>
+            </a>
+            <a href="{% url 'my_logout' %}" class="nav-item" style="color: var(--danger); margin-top: 20px;">
+                <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+            </a>
+        </div>
     </div>
 
     <div class="main-content">
@@ -62,21 +74,117 @@
             </div>
 
             {% if claim.estimated_claim > 0 %}
+            <div class="technical-panel" style="background: #1e2937; border: 1px solid #374151; padding: 25px; border-radius: 12px; font-family: inherit; color: #f3f4f6;">
+
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #374151; padding-bottom: 12px;">
+                    <i class="fas fa-robot" style="color: #10b981; font-size: 1.2rem;"></i>
+                    <h3 style="color: #fff; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">AI Analysis Summary</h3>
+                </div>
+
+                <!-- Data Grid -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 25px;">
+
+                    <div>
+                        <label style="color: #9ca3af; font-size: 0.75rem; display: block; margin-bottom: 5px;">DETECTION BREAKDOWN</label>
+                        <p style="font-weight: 600; font-size: 1rem;">{{ claim.detected_parts|default:"No damage detected" }}</p>
+                    </div>
+
+                    <div>
+                        <label style="color: #9ca3af; font-size: 0.75rem; display: block; margin-bottom: 5px;">OVERALL DAMAGE GRADE</label>
+                        <p style="font-weight: 700; color: #fbbf24; font-size: 1rem;">{{ claim.damage_level|upper }}</p>
+                    </div>
+
+                    <div>
+                        <label style="color: #9ca3af; font-size: 0.75rem; display: block; margin-bottom: 5px;">AGGREGATE COEFFICIENT</label>
+                        <p style="font-weight: 600; font-size: 1rem; font-family: monospace;">{{ claim.total_damage_factor|floatformat:3 }}</p>
+                    </div>
+
+                    <div>
+                        <label style="color: #9ca3af; font-size: 0.75rem; display: block; margin-bottom: 5px;">MARKET VALUE APPLIED</label>
+                        <p style="font-weight: 600; font-size: 1rem;">₹{{ claim.market_value|floatformat:2 }}</p>
+                    </div>
+
+                </div>
+
+                <!-- Payout Highlight -->
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 15px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.9rem; font-weight: 500; color: #d1d5db;">Estimated Settlement:</span>
+                    <span style="font-size: 1.6rem; font-weight: 800; color: #10b981;">₹{{ claim.estimated_claim|floatformat:2 }}</span>
+                </div>
+
+            </div>
+            {% endif %}
+            {% if claim.estimated_claim > 0 %}
             <div class="technical-panel">
-                <h3><i class="fas fa-microchip"></i> YOLOv8 Technical Diagnostic</h3>
-                <div class="tech-grid">
-                    <div class="tech-visual">
-                        <img src="/media/yolo_results/sample_yolo.jpg" class="yolo-img" alt="YOLO Inference Result">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3><i class="fas fa-microchip"></i> AI Detection Ledger</h3>
+                    <div style="font-size: 0.8rem; color: #10b981;">
+                        <span>Images Analyzed: {{ claim.images.count }}</span> |
+                        <span>Total Detections: {{ detections|length }}</span>
                     </div>
-                    <div class="tech-data">
-                        <p style="opacity: 0.6;">> BOOTING NEURAL NETWORK... [OK]</p>
-                        <p>> DETECTED FEATURES: <span style="color: #fff; font-weight: bold;">{{ claim.detected_parts|default:"Bumper, Hood, Headlight" }}</span></p>
-                        <p>> DAMAGE_COEFF_SUM: <span style="color: #fbbf24; font-weight: bold;">{{ claim.total_damage_factor|default:"0.10" }}</span></p>
-                        <p>> MARKET_VALUE_SYNC: ₹{{ claim.market_value }}</p>
-                        <div class="payout-highlight">
-                            CALCULATED PAYOUT: ₹{{ claim.estimated_claim }}
-                        </div>
-                    </div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; color: #fff; font-size: 0.85rem;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid #1e293b; text-align: left; color: #64748b;">
+                            <th style="padding: 10px;">Visual</th>
+                            <th>Detection Type</th>
+                            <th>Severity</th>
+                            <th>Coeff.</th>
+                            <th style="text-align: center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <!-- 'detections' comes from claim.detections.all() in your view -->
+                    {% for det in detections %}
+                    <tr style="border-bottom: 1px solid #1e293b;" id="row-{{ det.id }}">
+                        <td style="padding: 10px;">
+                            <!-- Use det.source_image.image.url to get the actual image path -->
+                            <!-- Use det.box_coords to match the model field -->
+                            <button type="button" onclick="openBoundingBox('{{ det.source_image.image.url }}', '{{ det.box_coords }}')"
+                                    style="background: #1e293b; border: 1px solid #10b981; color: #10b981; padding: 4px 8px; border-radius: 4px; cursor: pointer;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+
+                        <!-- Use det.part_name which we saved in views.py -->
+                        <td>{{ det.part_name|default:"Vehicle Body Damage" }}</td>
+
+                        <td>
+                            <span class="badge" style="color: {% if det.severity == 'major' %}#ef4444{% elif det.severity == 'moderate' %}#f59e0b{% else %}#10b981{% endif %}; font-weight: bold;">
+                                {{ det.severity|upper }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {% if det.severity == 'major' %}₹{{ claim.major_coeff }}
+                            {% elif det.severity == 'moderate' %}₹{{ claim.moderate_coeff }}
+                            {% else %}₹{{ claim.minor_coeff }}{% endif %}
+                        </td>
+
+                        <td style="text-align: center;">
+                            <input type="hidden" name="detection_severity[]" value="{{ det.severity }}">
+                            <!-- Pass det.id to the delete function so we can remove it from DB later -->
+                            <button type="button" onclick="removeDetection('row-{{ det.id }}')"
+                                    style="background: none; border: none; color: #ef4444; cursor: pointer;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: #64748b;">
+                            <i class="fas fa-microchip" style="font-size: 2rem; display: block; margin-bottom: 10px; opacity: 0.3;"></i>
+                            No AI detections found. Click "Run AI Simulation" to populate the ledger.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                </table>
+
+                <div class="payout-highlight" style="width: 100%; margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>ADJUSTED TOTAL PAYOUT:</span>
+                    <span id="payout-display">₹{{ claim.estimated_claim }}</span>
                 </div>
             </div>
             {% endif %}
@@ -104,5 +212,18 @@
         </div>
     </div>
 
+
+            <script>
+                function removeDetection(rowId) {
+                    if(confirm("Exclude this detection from the total calculation?")) {
+                        document.getElementById(rowId).remove();
+                        // In a real app, you'd trigger a JS recalc here or wait for "Save"
+                    }
+                }
+
+                function openBoundingBox(imgUrl, boxCoords) {
+                    alert("Opening Image: " + imgUrl + "\nHighlighting Coordinates: " + boxCoords + "\n\n(This will open the modal in the next phase)");
+                }
+            </script>
 </body>
 </html>

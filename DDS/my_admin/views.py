@@ -1,4 +1,4 @@
-import re
+import re, json
 import requests
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
 from django.utils import timezone
-from .models import VehicleValue, DamageAnalysis, UserProfile, InsuranceCompany, UserComplaint, ClaimImage
+from .models import UserProfile, VehicleValue, DamageAnalysis, ClaimImage, DamageDetection, UserComplaint
 
 
 def is_agent(user):
@@ -173,9 +173,10 @@ def agent_dashboard(request):
 def review_claim(request, claim_id):
     if not is_agent(request.user): return redirect('admin_dashboard')
     claim = get_object_or_404(DamageAnalysis, id=claim_id)
+
+    # 1. Suggested Market Value logic
     default_market_value = 0
     try:
-
         model_name = claim.car_details.split()[-1]
         vehicle = VehicleValue.objects.filter(model__icontains=model_name).first()
         if vehicle: default_market_value = vehicle.price
@@ -183,10 +184,13 @@ def review_claim(request, claim_id):
         pass
 
     if request.method == "POST":
-        m_val = request.POST.get('market_value') or 0
-        mi_c = request.POST.get('minor_coeff') or 0.025
-        mo_c = request.POST.get('moderate_coeff') or 0.05
-        ma_c = request.POST.get('major_coeff') or 0.1
+        # Get form inputs
+        m_val = float(request.POST.get('market_value') or 0)
+        mi_c = float(request.POST.get('minor_coeff') or 0.025)
+        mo_c = float(request.POST.get('moderate_coeff') or 0.05)
+        ma_c = float(request.POST.get('major_coeff') or 0.1)
+
+        # Update base fields
         claim.market_value = m_val
         claim.minor_coeff = mi_c
         claim.moderate_coeff = mo_c
@@ -194,67 +198,103 @@ def review_claim(request, claim_id):
         claim.agent_comment = request.POST.get('agent_comment')
 
         if "run_model" in request.POST:
-            evidence_photos = ClaimImage.objects.filter(analysis=claim)
+            # 1. Gather all images associated with this claim
+            evidence_photos = claim.images.all()
+
             if not evidence_photos.exists():
-                messages.error(request, "No images found to analyze!")
+                messages.error(request, "No images found to analyze! Please ask user for evidence.")
                 return redirect('review_claim', claim_id=claim.id)
 
             files_to_send = []
-            opened_files = []  # We keep track so we can close them later
+            opened_files = []
 
             try:
+                # 2. Prepare files for the YOLO API
                 for photo_record in evidence_photos:
                     f = open(photo_record.image.path, 'rb')
                     opened_files.append(f)
-
                     files_to_send.append(('image', (photo_record.image.name, f, 'image/jpeg')))
 
-                # 3. Call your YOLO Server (Flask)
+                # 3. Call the YOLO Server
                 ai_url = "http://127.0.0.1:5000/home"
                 response = requests.post(ai_url, files=files_to_send, timeout=60)
 
                 if response.status_code == 200:
                     ai_results = response.json()
+                    detections_data = ai_results.get('detections', [])
 
-                    # 4. Update the Database with REAL data from AI
-                    claim.damage_level = ai_results.get('severity', 'Moderate')
-                    claim.detected_parts = ai_results.get('parts', 'Bumper, Hood')
-                    # We use the factor returned by AI (e.g. 0.12)
-                    claim.total_damage_factor = ai_results.get('total_damage_factor', 0.10)
+                    # --- CLEAN 5 RELATIONAL LOGIC ---
+                    # 4. Clear any old AI detections before saving new ones (Prevent Duplicates)
+                    claim.detections.all().delete()
 
-                    # CALCULATE PAYOUT: Market Value * AI Factor
-                    claim.estimated_claim = float(m_val) * float(claim.total_damage_factor)
+                    total_coeff = 0.0
+                    counts = {'Major': 0, 'Moderate': 0, 'Minor': 0}
+                    highest_sev = 'Minor'
 
-                    # Optional: If AI returns a processed image path
-                    # claim.yolo_output_image = ai_results.get('output_url')
+                    # 5. Create a REAL database row for every single detection
+                    for det in detections_data:
+                        sev = det.get('severity', 'minor').lower()
 
-                    messages.success(request, f"AI Analysis Success: Factor {claim.total_damage_factor}")
+                        # Create the ledger entry
+                        DamageDetection.objects.create(
+                            analysis=claim,
+                            severity=sev,
+                            box_coords=str(det.get('box')),  # [x1, y1, x2, y2]
+                            # Link to the first image for visual reference
+                            source_image=evidence_photos.first()
+                        )
+
+                        # 6. Additive Math Logic
+                        if sev == 'major':
+                            total_coeff += float(ma_c);
+                            counts['Major'] += 1
+                            highest_sev = 'Major'
+                        elif sev == 'moderate':
+                            total_coeff += float(mo_c);
+                            counts['Moderate'] += 1
+                            if highest_sev != 'Major': highest_sev = 'Moderate'
+                        else:
+                            total_coeff += float(mi_c);
+                            counts['Minor'] += 1
+
+                    # 7. Update the Master Claim (DamageAnalysis table)
+                    summary = [f"{k}({v})" for k, v in counts.items() if v > 0]
+                    claim.detected_parts = ", ".join(summary)
+                    claim.total_damage_factor = total_coeff
+                    claim.damage_level = highest_sev
+
+                    # Calculate Final Payout: Market Value * Sum of Coefficients
+                    claim.estimated_claim = float(m_val) * total_coeff
+
+                    claim.save()
+                    messages.success(request, f"AI Ledger Updated: {len(detections_data)} items identified.")
                 else:
-                    messages.error(request, "AI Server is running but returned an error.")
+                    messages.error(request, "AI Server returned an error. Check Flask terminal.")
 
             except Exception as e:
-                messages.error(request, f"Connection to AI failed: {str(e)}")
+                messages.error(request, f"System Error: {str(e)}")
             finally:
-                # IMPORTANT: Always close files to prevent memory leaks/locks
+                # Cleanup: Close all image files
                 for f in opened_files:
                     f.close()
 
-            claim.save()  # Pushes AI results to my_admin_damageanalysis table
-
             return redirect('review_claim', claim_id=claim.id)
 
+        # Handle Finalize
         if "finalize_valuation" in request.POST:
             claim.status = 'Approved'
             claim.save()
-            messages.success(request, "Valuation finalized and sent to user.")
+            messages.success(request, "Valuation finalized.")
             return redirect('agent_dashboard')
 
+        # Handle Generic Save
         claim.save()
-        messages.success(request, "Progress saved.")
         return redirect('review_claim', claim_id=claim.id)
 
+    # PAGE LOAD (GET REQUEST)
     context = {
         'claim': claim,
+        'detections': claim.detections.all(),  # This now finds the rows created above
         'default_market_value': default_market_value,
         'def_minor': 0.025, 'def_moderate': 0.05, 'def_major': 0.1
     }

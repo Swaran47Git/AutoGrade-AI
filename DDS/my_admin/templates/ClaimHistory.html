@@ -106,23 +106,38 @@
                 <tbody>
                     {% for claim in claims %}
                     <tr>
-                        <td style="color: var(--gray);">{{ claim.date_analyzed|date:"d M Y" }}</td>
+                        <!-- Problem 3 Fix: Show the last update time -->
+                        <td style="color: var(--gray);">{{ claim.updated_at|date:"d M Y" }}</td>
+
                         <td style="font-weight: 700;">{{ claim.car_details }}</td>
+
                         <td><strong style="color: var(--primary);">{{ claim.damage_level|upper }}</strong></td>
-                        <td style="font-weight: 700;">₹{{ claim.estimated_claim|default:"0.00" }}</td>
+
+                        <!-- Problem 4 Fix: Proper currency formatting -->
+                        <td style="font-weight: 700;">₹{{ claim.estimated_claim|floatformat:2 }}</td>
+
                         <td>
                             {% if claim.status == 'Pending' %}
                                 <span class="badge badge-pending"><i class="fas fa-clock"></i> PENDING</span>
                             {% elif claim.status == 'Approved' %}
-                                <span class="badge badge-approved"><i class="fas fa-check-circle"></i> APPROVED</span>
+                                <span class="badge badge-success" style="background:#dcfce7; color:#166534;"><i class="fas fa-check-circle"></i> APPROVED</span>
+                            {% elif claim.status == 'Escalated' %}
+                                <!-- Problem 2 Fix: Tier 3 Highlight -->
+                                <span class="badge badge-danger" style="background:#fee2e2; color:#991b1b;"><i class="fas fa-gavel"></i> ESCALATED</span>
                             {% else %}
-                                <span class="badge badge-appealed"><i class="fas fa-exclamation-circle"></i> {{ claim.status|upper }}</span>
+                                <span class="badge badge-appealed" style="background:#e0e7ff; color:#3730a3;"><i class="fas fa-sync"></i> {{ claim.status|upper }}</span>
                             {% endif %}
                         </td>
+
                         <td>
                             {% if claim.status == 'Pending' %}
                                 <a href="{% url 'user_edit_claim' claim.id %}" class="btn-action btn-edit">
                                     <i class="fas fa-edit"></i> Edit
+                                </a>
+                            {% elif claim.appeal_count >= 2 and claim.status != 'Approved' %}
+                                <!-- Problem 1 Fix: The Tier 3 Switch -->
+                                <a href="{% url 'claim_details' claim.id %}" class="btn-action" style="background: var(--danger); color:white;">
+                                    <i class="fas fa-exclamation-triangle"></i> Escalate
                                 </a>
                             {% else %}
                                 <a href="{% url 'claim_details' claim.id %}" class="btn-action btn-view">
