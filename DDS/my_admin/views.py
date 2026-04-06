@@ -6,7 +6,6 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
-from django.utils import timezone
 from .models import UserProfile, VehicleValue, DamageAnalysis, ClaimImage, DamageDetection, UserComplaint
 
 
@@ -177,7 +176,6 @@ def review_claim(request, claim_id):
     if not is_agent(request.user): return redirect('admin_dashboard')
     claim = get_object_or_404(DamageAnalysis, id=claim_id)
 
-    # 1. Suggested Market Value logic
     default_market_value = 0
     try:
         model_name = claim.car_details.split()[-1]
