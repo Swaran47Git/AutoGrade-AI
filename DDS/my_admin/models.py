@@ -51,11 +51,20 @@ class ClaimImage(models.Model):
     analysis = models.ForeignKey(DamageAnalysis, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='damage_scans/')
 
+
 class UserComplaint(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     claim = models.ForeignKey(DamageAnalysis, on_delete=models.CASCADE)
     subject = models.CharField(max_length=200)
     description = models.TextField()
+
+    # ADD THIS FIELD BACK:
+    priority = models.CharField(
+        max_length=10,
+        choices=(('Low', 'Low'), ('Medium', 'Medium'), ('High', 'High')),
+        default='Medium'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
 # 5. THE AI LEDGER (This replaces the messy JSONField)

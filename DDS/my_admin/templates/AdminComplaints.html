@@ -5,45 +5,188 @@
     <title>AutoGrade AI | Admin Disputes</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f3f4f6; display: flex; }
-        .main { flex: 1; padding: 40px; margin-left: 280px; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        th { background: #1f2937; color: white; padding: 15px; text-align: left; }
-        td { padding: 15px; border-bottom: 1px solid #edf2f7; }
-        .priority-high { color: #dc2626; font-weight: 700; }
+        /* --- GLOBAL RESET & VARIABLES --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root {
+            --primary: #1a56db;
+            --primary-dark: #1e429f;
+            --secondary: #f59e0b;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --gray: #6b7280;
+            --danger: #dc2626;
+            --success: #10b981;
+            --transition: all 0.3s ease;
+        }
+
+        body { background-color: #f3f4f6; display: flex; min-height: 100vh; }
+
+        /* --- SIDEBAR (Fixed & Bottom-Pinned Logout) --- */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, var(--dark) 0%, #111827 100%);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            padding: 30px 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header .logo { display: flex; align-items: center; gap: 10px; font-size: 1.8rem; font-weight: 700; color: white; margin-bottom: 30px; }
+        .sidebar-header .logo i { color: var(--secondary); }
+        .sidebar-header .logo span span { color: var(--secondary); }
+
+        .nav-menu { flex-grow: 1; padding: 20px 0; }
+        .nav-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: var(--transition);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid transparent;
+        }
+        .nav-item.active { background: rgba(255,255,255,0.1); color: white; border-left-color: var(--secondary); }
+
+        /* --- MAIN CONTENT --- */
+        .main-content { flex: 1; margin-left: 280px; padding: 40px; }
+
+        .top-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 25px 35px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .top-bar h1 { color: var(--dark); font-size: 1.8rem; margin-bottom: 5px; display: flex; align-items: center; gap: 12px; }
+        .top-bar p { color: var(--gray); font-size: 0.95rem; }
+
+        /* --- TABLE SECTION --- */
+        .table-container { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 15px; background: #f8fafc; color: var(--gray); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #edf2f7; }
+        td { padding: 18px 15px; border-bottom: 1px solid #edf2f7; color: var(--dark); font-size: 0.95rem; vertical-align: middle; }
+        tr:hover { background-color: #f1f5f9; }
+
+        /* --- PRIORITY BADGES --- */
+        .priority-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .priority-high { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+        .priority-medium { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+        .priority-low { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+
+        /* --- BUTTONS --- */
+        .btn-view {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-view:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(26, 86, 219, 0.2); }
+
+        .claim-ref { font-family: monospace; color: var(--primary); font-weight: 700; background: #eff6ff; padding: 2px 6px; border-radius: 4px; }
     </style>
 </head>
 <body>
-    <div class="main">
-        <h1>Escalated Claim Disputes</h1>
-        <p>Review final appeals from users who have exhausted their agent re-evaluations.</p>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>User</th>
-                    <th>Claim ID</th>
-                    <th>Priority</th>
-                    <th>Reason for Escalation</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for c in complaints %}
-                <tr>
-                    <td>{{ c.created_at|date:"d M Y" }}</td>
-                    <td><strong>@{{ c.user.username }}</strong></td>
-                    <td>#{{ c.claim.id }}</td>
-                    <td class="priority-high">{{ c.priority }}</td>
-                    <td>{{ c.description|truncatewords:15 }}</td>
-                    <td><button style="padding: 5px 10px; cursor:pointer;">View Full Case</button></td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="6" style="text-align:center; padding: 50px;">No escalated disputes found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo"><i class="fas fa-car-crash"></i><span>AutoGrade<span>AI</span></span></div>
+        </div>
+
+        <div class="nav-menu">
+            <a href="{% url 'admin_panel' %}" class="nav-item">
+                <i class="fas fa-users-cog"></i><span>User Management</span>
+            </a>
+            <a href="{% url 'admin_complaints_view' %}" class="nav-item active">
+                <i class="fas fa-exclamation-circle"></i><span>System Complaints</span>
+            </a>
+
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="{% url 'my_logout' %}" class="nav-item" style="color: var(--danger);">
+                <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+            </a>
+        </div>
     </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <h1><i class="fas fa-gavel" style="color: var(--danger);"></i> Escalated Claim Disputes</h1>
+            <p>Review final appeals from users who have exceeded their 2-attempt agent re-evaluations.</p>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ref #</th>
+                        <th>Claimant</th>
+                        <th>Date Escalated</th>
+                        <th>Priority</th>
+                        <th>Escalation Summary</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in complaints %}
+                    <tr>
+                        <td><span class="claim-ref">#{{ c.claim.id }}</span></td>
+                        <td>
+                            <div style="font-weight: 700;">@{{ c.user.username }}</div>
+                            <div style="font-size: 0.8rem; color: var(--gray);">{{ c.user.email }}</div>
+                        </td>
+                        <td style="color: var(--gray);">{{ c.created_at|date:"d M Y" }}</td>
+                        <td>
+                            <span class="priority-badge {% if c.priority == 'High' %}priority-high{% elif c.priority == 'Medium' %}priority-medium{% else %}priority-low{% endif %}">
+                                <i class="fas {% if c.priority == 'High' %}fa-fire{% else %}fa-circle{% endif %}"></i>
+                                {{ c.priority }}
+                            </span>
+                        </td>
+                        <td style="max-width: 250px; color: var(--gray); font-style: italic;">
+                            "{{ c.description|truncatewords:10 }}"
+                        </td>
+                        <td>
+                            <a href="{% url 'review_claim' c.claim.id %}" class="btn-view">
+                                <i class="fas fa-search-plus"></i> View Case
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align:center; padding: 60px; color: var(--gray);">
+                            <i class="fas fa-check-circle" style="font-size: 3rem; display: block; margin-bottom: 15px; opacity: 0.2;"></i>
+                            <p>No escalated disputes found in the system.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </body>
 </html>

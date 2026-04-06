@@ -127,6 +127,10 @@
 
             <div class="info-grid">
                 <div class="info-item">
+                    <label>No.</label>
+                    <p>{{ forloop.counter }}</p>
+                </div>
+                <div class="info-item">
                     <label>Submission Date</label>
                     <p>{{ claim.updated_at|date:"d F Y"}}</p>
                 </div>

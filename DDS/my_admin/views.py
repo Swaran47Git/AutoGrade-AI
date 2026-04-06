@@ -284,7 +284,11 @@ def review_claim(request, claim_id):
 
         # Handle Finalize
         if "finalize_valuation" in request.POST:
-            claim.status = 'Approved'
+            if claim.appeal_count >= 2:
+                claim.status = 'Escalated'
+            else:
+                claim.status = 'Approved'
+
             claim.save()
             messages.success(request, "Valuation finalized.")
             return redirect('agent_dashboard')

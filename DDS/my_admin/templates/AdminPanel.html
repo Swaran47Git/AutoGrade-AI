@@ -22,15 +22,40 @@
         body { background-color: #f3f4f6; display: flex; min-height: 100vh; }
 
         /* Sidebar */
-        .sidebar { width: 280px; background: linear-gradient(135deg, var(--dark) 0%, #111827 100%); color: white; position: fixed; height: 100vh; padding: 30px 20px; z-index: 100; }
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, var(--dark) 0%, #111827 100%);
+            color: white;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            padding: 30px 20px;
+            z-index: 100;
+            display: flex;
+        }
+        .sidebar-footer {
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1); /* Optional line for separation */
+            margin-top: auto; /* Double insurance to keep it at the bottom */
+        }
         .sidebar-header .logo { display: flex; align-items: center; gap: 10px; font-size: 1.8rem; font-weight: 700; color: white; margin-bottom: 30px; }
         .sidebar-header .logo i { color: var(--secondary); }
         .sidebar-header .logo span span { color: var(--secondary); }
 
-        .nav-menu { padding: 20px 0; }
-        .nav-item { padding: 12px 20px; display: flex; align-items: center; gap: 15px; color: rgba(255,255,255,0.7); text-decoration: none; transition: var(--transition); border-radius: 8px; margin-bottom: 8px; }
-        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
-        .nav-item.active { border-left: 4px solid var(--secondary); background: rgba(255,255,255,0.05); }
+        .nav-menu { padding: 20px 0; flex-grow: 1; }
+        .nav-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: var(--transition);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid transparent;
+        }
+        .nav-item.active { background: rgba(255,255,255,0.1); color: white; border-left-color: var(--secondary); }
 
         /* Main Content */
         .main-content { flex: 1; margin-left: 280px; padding: 40px; }
@@ -68,17 +93,16 @@
             <div class="logo"><i class="fas fa-car-crash"></i><span>AutoGrade<span>AI</span></span></div>
         </div>
         <div class="nav-menu">
-            <a href="{% url 'admin_panel' %}" class="nav-item active">
+            <a href="{% url 'admin_panel' %}" class="nav-item">
                 <i class="fas fa-users-cog"></i><span>User Management</span>
             </a>
             <a href="{% url 'admin_complaints_view' %}" class="nav-item">
                 <i class="fas fa-exclamation-circle"></i><span>System Complaints</span>
             </a>
-            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
-            <a href="{% url 'admin_dashboard' %}" class="nav-item">
-                <i class="fas fa-home"></i><span>User Dashboard</span>
-            </a>
-            <a href="{% url 'my_logout' %}" class="nav-item" style="color: var(--danger); margin-top: 20px;">
+        </div> <!-- CLOSE nav-menu HERE -->
+
+        <div class="sidebar-footer">
+            <a href="{% url 'my_logout' %}" class="nav-item" style="color: var(--danger);">
                 <i class="fas fa-sign-out-alt"></i><span>Logout</span>
             </a>
         </div>

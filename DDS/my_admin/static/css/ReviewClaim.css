@@ -14,6 +14,12 @@ body { background-color: #f3f4f6; display: flex; min-height: 100vh; }
     display: flex;
     flex-direction: column;
 }
+.sidebar-footer {
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.1); /* Optional line for separation */
+    margin-top: auto; /* Double insurance to keep it at the bottom */
+}
+
 .sidebar-header { text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; margin-bottom: 20px; }
 .sidebar-header .logo { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.8rem; font-weight: 700; color: white; }
 .sidebar-header .logo i { color: #f59e0b; }
