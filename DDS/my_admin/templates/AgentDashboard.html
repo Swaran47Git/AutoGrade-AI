@@ -22,13 +22,29 @@
         body { background-color: #f3f4f6; display: flex; min-height: 100vh; }
 
         /* Sidebar */
-        .sidebar { width: 280px; background: linear-gradient(135deg, var(--dark) 0%, #111827 100%); color: white; position: fixed; height: 100vh; overflow-y: auto; transition: var(--transition); z-index: 100; }
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, var(--dark) 0%, #111827 100%);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+
+            /* ADD THESE TWO LINES - THIS IS THE ENGINE */
+            display: flex;
+            flex-direction: column;
+        }
         .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .sidebar-header .logo { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.8rem; font-weight: 700; color: white; }
         .sidebar-header .logo i { color: var(--secondary); }
         .sidebar-header .logo span span { color: var(--secondary); }
+        .sidebar-footer {
+            padding-bottom: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1); /* Optional line for separation */
+            margin-top: auto; /* Double insurance to keep it at the bottom */
+        }
 
-        .nav-menu { padding: 20px 0; }
+        .nav-menu { padding: 20px 0; flex-grow: 1; }
         .nav-item { padding: 12px 25px; display: flex; align-items: center; gap: 15px; color: rgba(255,255,255,0.7); text-decoration: none; transition: var(--transition); border-left: 4px solid transparent; }
         .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; border-left-color: var(--secondary); }
 
@@ -73,7 +89,9 @@
         <div class="nav-menu">
             <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-home"></i><span>User Dashboard</span></a>
             <a href="{% url 'agent_dashboard' %}" class="nav-item active"><i class="fas fa-tasks"></i><span>Claims Queue</span></a>
-            <a href="{% url 'my_logout' %}" class="nav-item" style="color: var(--danger); margin-top: 20px;">
+        </div>
+        <div class="sidebar-footer">
+            <a href="{% url 'my_logout' %}" class="nav-item" style="color: var(--danger);">
                 <i class="fas fa-sign-out-alt"></i><span>Logout</span>
             </a>
         </div>
@@ -108,11 +126,11 @@
             <table>
                 <thead>
                     <tr>
+                        <th>No.</th>
                         <th>Submission Date</th>
                         <th>User Account</th>
                         <th>Vehicle Details</th>
                         <th>AI Damage Grade</th>
-                        <th>Current Status</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -120,6 +138,9 @@
                     {% for claim in claims %}
                     <tr {% if claim.status == 'Appealed' %}style="border-left: 5px solid var(--secondary); background-color: #fffbeb;"{% endif %}>
 
+                        <td style="padding: 10px; color: #64748b; font-family: monospace;text-align: center;">
+                            {{ forloop.counter }}
+                        </td>
                         <!-- FIX: Using created_at instead of date_analyzed -->
                         <td style="color: var(--gray);">
                             {{ claim.created_at|date:"d M Y" }}
@@ -134,19 +155,6 @@
                             <strong style="color: var(--primary);">
                                 {{ claim.damage_level|upper|default:"TBD" }}
                             </strong>
-                        </td>
-
-                        <td>
-                            {% if claim.status == 'Appealed' %}
-                                <!-- TIER 2 Highlight -->
-                                <span class="badge" style="background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe;">
-                                    <i class="fas fa-sync-alt"></i> APPEALED ({{ claim.appeal_count }}/2)
-                                </span>
-                            {% else %}
-                                <span class="badge badge-pending">
-                                    <i class="fas fa-clock"></i> AWAITING VERIFICATION
-                                </span>
-                            {% endif %}
                         </td>
 
                         <td>

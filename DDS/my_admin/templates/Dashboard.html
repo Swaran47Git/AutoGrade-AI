@@ -22,13 +22,29 @@
         body { background-color: #f3f4f6; display: flex; min-height: 100vh; }
 
         /* Sidebar */
-        .sidebar { width: 280px; background: linear-gradient(135deg, var(--dark) 0%, #111827 100%); color: white; position: fixed; height: 100vh; overflow-y: auto; transition: var(--transition); z-index: 100; }
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, var(--dark) 0%, #111827 100%);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+
+            /* ADD THESE TWO LINES - THIS IS THE ENGINE */
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-footer {
+            padding-bottom: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1); /* Optional line for separation */
+            margin-top: auto; /* Double insurance to keep it at the bottom */
+        }
         .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .sidebar-header .logo { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.8rem; font-weight: 700; color: white; margin-bottom: 10px; }
         .sidebar-header .logo i { color: var(--secondary); }
         .sidebar-header .logo span span { color: var(--secondary); }
 
-        .user-info { padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .user-info { padding: 10px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .user-avatar { width: 50px; height: 50px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 600; color: white; text-transform: uppercase; }
 
         .nav-menu { padding: 20px 0; }
@@ -92,13 +108,6 @@
         <div class="sidebar-header">
             <div class="logo"><i class="fas fa-car-crash"></i><span>AutoGrade<span>AI</span></span></div>
         </div>
-        <div class="user-info">
-            <div class="user-avatar">{{ user.first_name|slice:":1" }}</div>
-            <div class="user-details">
-                <h4>{{ user.first_name }}</h4>
-                <p>{{ user.email }}</p>
-            </div>
-        </div>
         <div class="nav-menu">
             {% if user.userprofile.role == 'User' %}
                 <a href="{% url 'admin_dashboard' %}" class="nav-item active">
@@ -121,8 +130,17 @@
                 </a>
             {% endif %}
         </div>
-        <div class="logout-btn" onclick="location.href='{% url 'my_logout' %}'">
-            <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+        <div class="sidebar-footer">
+        <div class="user-info">
+            <div class="user-avatar">{{ user.first_name|slice:":1" }}</div>
+            <div class="user-details">
+                <h4>{{ user.first_name }}</h4>
+                <p>{{ user.email }}</p>
+            </div>
+        </div>
+            <a href="{% url 'my_logout' %}" class="nav-item" style="color: var(--danger); margin-top: 30px;">
+                <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+            </a>
         </div>
     </div>
 

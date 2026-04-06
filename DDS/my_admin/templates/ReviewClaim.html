@@ -17,9 +17,6 @@
             <a href="{% url 'claim_history' %}" class="nav-item">
                 <i class="fas fa-history"></i><span>Back</span>
             </a>
-            <a href="{% url 'my_logout' %}" class="nav-item" style="color: var(--danger); margin-bottom: 20px;">
-                <i class="fas fa-sign-out-alt"></i><span>Logout</span>
-            </a>
         </div>
     </div>
 
@@ -42,6 +39,23 @@
                 {% endfor %}
             </div>
 
+            <label>Client Information</label>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; background: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 25px;">
+                <div>
+                    <span style="font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 4px;">Customer Name</span>
+                    <span style="font-weight: 600; color: #1e293b;">{{ claim.user.first_name }} {{ claim.user.last_name }}</span>
+                    <small style="color: #94a3b8; display: block;">@{{ claim.user.username }}</small>
+                </div>
+                <div>
+                    <span style="font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 4px;">Contact Email</span>
+                     <span style="font-weight: 600; color: #1e293b;">{{ claim.user.email }}</span>
+                </div>
+                <div>
+                    <span style="font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 4px;">Policy Holder Since</span>
+                    <span style="font-weight: 600; color: #1e293b;">{{ claim.user.date_joined|date:"M Y" }}</span>
+                </div>
+            </div>
+
             {% if claim.estimated_claim > 0 %}
             <div class="technical-panel" style="background: #1e2937; border: 1px solid #374151; padding: 25px; border-radius: 12px; font-family: inherit; color: #f3f4f6;">
 
@@ -59,13 +73,15 @@
                     </div>
 
                     <div>
-                        <label style="color: #9ca3af; font-size: 0.75rem; display: block; margin-bottom: 5px;">OVERALL DAMAGE GRADE</label>
-                        <p style="font-weight: 700; color: #fbbf24; font-size: 1rem;">{{ claim.damage_level|upper }}</p>
+                        <label style="color: #9ca3af; font-size: 0.75rem; display: block; margin-bottom: 5px;">AGGREGATE COEFFICIENT</label>
+                        <p style="font-weight: 600; font-size: 1rem; font-family: monospace;">{{ claim.total_damage_factor|floatformat:3 }}</p>
                     </div>
 
                     <div>
-                        <label style="color: #9ca3af; font-size: 0.75rem; display: block; margin-bottom: 5px;">AGGREGATE COEFFICIENT</label>
-                        <p style="font-weight: 600; font-size: 1rem; font-family: monospace;">{{ claim.total_damage_factor|floatformat:3 }}</p>
+                        <label style="color: #9ca3af; font-size: 0.75rem; display: block; margin-bottom: 5px;">TOTAL EVIDENCE IMAGES</label>
+                        <p style="font-weight: 700; color: #60a5fa; font-size: 1rem;">
+                            {{ claim.images.count }} <span style="font-size: 0.8rem; font-weight: normal; color: #9ca3af;">Files Uploaded</span>
+                        </p>
                     </div>
 
                     <div>
@@ -96,10 +112,11 @@
                 <table style="width: 100%; border-collapse: collapse; color: #fff; font-size: 0.85rem;">
                     <thead>
                         <tr style="border-bottom: 1px solid #1e293b; text-align: left; color: #64748b;">
-                            <th style="padding: 10px;">Visual</th>
+                            <th style="padding: 10px; width: 40px;">No.</th>
                             <th>Detection Type</th>
                             <th>Severity</th>
                             <th>Coeff.</th>
+                            <th style="padding: 10px;text-align: center;">Visual</th>
                             <th style="text-align: center;">Action</th>
                         </tr>
                     </thead>
@@ -107,17 +124,11 @@
                     <!-- 'detections' comes from claim.detections.all() in your view -->
                     {% for det in detections %}
                     <tr style="border-bottom: 1px solid #1e293b;" id="row-{{ det.id }}">
-                        <td style="padding: 10px;">
-                            <!-- Use det.source_image.image.url to get the actual image path -->
-                            <!-- Use det.box_coords to match the model field -->
-                            <button type="button" onclick="openBoundingBox('{{ det.source_image.image.url }}', '{{ det.box_coords }}')"
-                                    style="background: #1e293b; border: 1px solid #10b981; color: #10b981; padding: 4px 8px; border-radius: 4px; cursor: pointer;">
-                                <i class="fas fa-eye"></i>
-                            </button>
+                        <td style="padding: 10px; color: #64748b; font-family: monospace;">
+                            {{ forloop.counter }}
                         </td>
 
-                        <!-- Use det.part_name which we saved in views.py -->
-                        <td>{{ det.part_name|default:"Vehicle Body Damage" }}</td>
+                        <td>{{ det.source_image.image.name|cut:"damage_scans/" }}</td>
 
                         <td>
                             <span class="badge" style="color: {% if det.severity == 'major' %}#ef4444{% elif det.severity == 'moderate' %}#f59e0b{% else %}#10b981{% endif %}; font-weight: bold;">
@@ -129,6 +140,15 @@
                             {% if det.severity == 'major' %}{{ claim.major_coeff }}
                             {% elif det.severity == 'moderate' %}{{ claim.moderate_coeff }}
                             {% else %}{{ claim.minor_coeff }}{% endif %}
+                        </td>
+
+                        <td style="padding: 10px;text-align: center;">
+                            <!-- Use det.source_image.image.url to get the actual image path -->
+                            <!-- Use det.box_coords to match the model field -->
+                            <button type="button" onclick="openBoundingBox('{{ det.source_image.image.url }}', '{{ det.box_coords }}')"
+                                    style="background: #1e293b; border: 1px solid #10b981; color: #10b981; padding: 4px 8px; border-radius: 4px; cursor: pointer;">
+                                <i class="fas fa-eye"></i>
+                            </button>
                         </td>
 
                         <td style="text-align: center;">
